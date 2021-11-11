@@ -129,6 +129,7 @@ export default {
     }
     img {
       margin-right: 10px;
+      width: 28px;
     }
   }
   .pop-arrow,

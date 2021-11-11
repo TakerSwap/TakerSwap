@@ -375,7 +375,6 @@ export default defineComponent({
       }
       img {
         width: 28px;
-        height: 28px;
         cursor: pointer;
       }
       span {

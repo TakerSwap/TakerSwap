@@ -247,7 +247,9 @@ export default defineComponent({
           res = transfer.calWithdrawalFeeForTRON(
             L1MainAssetUSD,
             feeAssetUSD,
-            decimals
+            decimals,
+            false,
+            feeIsNVT
           );
         } else {
           res = await transfer.calWithdrawalFee(

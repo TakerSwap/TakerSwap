@@ -189,40 +189,38 @@ export default defineComponent({
     }
   }
   @media screen and (max-width: 500px) {
-    .select-assets-dialog {
-      .el-input {
-        .el-input__inner {
-          line-height: 36px;
-          height: 36px;
-        }
-        margin-bottom: 10px;
+    .el-input {
+      .el-input__inner {
+        line-height: 36px;
+        height: 36px;
       }
-      .list-wrap {
-        li {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          height: 48px;
-          cursor: pointer;
-          img {
-            width: 30px;
-            height: 30px;
-            margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    .list-wrap {
+      li {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 48px;
+        cursor: pointer;
+        img {
+          width: 30px;
+          height: 30px;
+          margin-right: 10px;
+        }
+        .asset-base-info {
+          flex: 1;
+          div {
+            font-size: 14px;
           }
-          .asset-base-info {
-            flex: 1;
-            div {
-              font-size: 14px;
-            }
-            span {
-              font-size: 12px;
-            }
+          span {
+            font-size: 12px;
           }
-          .asset-price {
-            max-width: 60%;
-            span:nth-child(1) {
-              font-size: 16px;
-            }
+        }
+        .asset-price {
+          max-width: 60%;
+          span:nth-child(1) {
+            font-size: 16px;
           }
         }
       }

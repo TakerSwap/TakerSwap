@@ -672,11 +672,11 @@ export class ETransfer {
    * @param mainAssetUSD 提现网络主资产USD
    * @param feeUSD 手续费USD
    * @param feeDecimals 手续费精度
-   * @param isTRX 手续费为trx
+   * @param isMainAsset 手续费为trx
    * @param isNVT 是否是NVT
    * */
-  calWithdrawalFeeForTRON(mainAssetUSD = "", feeUSD = "", feeDecimals, isTRX, isNVT) {
-    if (isTRX) {
+  calWithdrawalFeeForTRON(mainAssetUSD = "", feeUSD = "", feeDecimals, isMainAsset, isNVT) {
+    if (isMainAsset) {
       return this.formatEthers(config.trxWithdrawFee, feeDecimals);
     } else {
       const feeUSDBig = ethers.utils.parseUnits(feeUSD.toString(), 6);
