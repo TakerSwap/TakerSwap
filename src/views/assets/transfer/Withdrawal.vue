@@ -258,7 +258,8 @@ export default defineComponent({
             isToken,
             decimals,
             false,
-            feeIsNVT
+            feeIsNVT,
+            feeChain === "TRON"
           );
         }
       }

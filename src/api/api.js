@@ -638,8 +638,9 @@ export class ETransfer {
    * @param feeDecimals 手续费精度
    * @param isMainAsset 手续费是否是提现网络主资产
    * @param isNVT 手续费是否是NVT
+   * @param isTRX 手续费是否是TRX
    * */
-  async calWithdrawalFee(mainAssetUSD, feeUSD, isToken, feeDecimals, isMainAsset, isNVT) {
+  async calWithdrawalFee(mainAssetUSD, feeUSD, isToken, feeDecimals, isMainAsset, isNVT, isTRX) {
     const gasPrice = await this.getWithdrawGas();
     let gasLimit;
     if (isToken) {
@@ -658,7 +659,7 @@ export class ETransfer {
       .mul(ethers.utils.parseUnits("1", feeDecimals))
       .div(ethers.utils.parseUnits("1", 18))
       .div(feeUSDBig);
-    if (isNVT) {
+    if (isNVT || isTRX) {
       // 如果是nvt，向上取整
       const numberStr = ethers.utils.formatUnits(result, feeDecimals);
       const ceil = Math.ceil(numberStr);
