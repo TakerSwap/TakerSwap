@@ -37,16 +37,16 @@
         <collapse-transition>
           <DetailsBar
             :tokenInfo="item"
-            :isTalon="isTalon"
+            :isTaker="isTaker"
             :isPool="isPool"
-            :talonAddress="talonAddress"
+            :takerAddress="takerAddress"
             v-show="item.showDetail"
             @loading="handleLoading"
           ></DetailsBar>
         </collapse-transition>
       </div>
     </template>
-<!--    <div class="more" v-if="isTalon && talonAddress">
+<!--    <div class="more" v-if="isTaker && takerAddress">
       <span class="link" @click="createFarm">{{ $t("farm.farm11") }}</span>
     </div>-->
   </div>
@@ -80,9 +80,9 @@
       <collapse-transition>
         <DetailsBar
           :tokenInfo="item"
-          :isTalon="isTalon"
+          :isTaker="isTaker"
           :isPool="isPool"
-          :talonAddress="talonAddress"
+          :takerAddress="takerAddress"
           v-show="item.showDetail"
           @loading="handleLoading"
         ></DetailsBar>
@@ -104,7 +104,7 @@ export default defineComponent({
   props: {
     loading: Boolean,
     list: Array,
-    isTalon: Boolean,
+    isTaker: Boolean,
     isPool: Boolean
   },
   emits: ["handleLoading"],
@@ -115,8 +115,8 @@ export default defineComponent({
       contractAddress: "0x0faee22173db311f4c57c81ec6867e5deef6c218" //合约地址
     });
 
-    const talonAddress = computed(() => {
-      return store.getters.talonAddress;
+    const takerAddress = computed(() => {
+      return store.getters.takerAddress;
     });
 
     async function createFarm() {
@@ -139,7 +139,7 @@ export default defineComponent({
 
     return {
       ...toRefs(state),
-      talonAddress,
+      takerAddress,
       showId,
       handleLoading,
       createFarm

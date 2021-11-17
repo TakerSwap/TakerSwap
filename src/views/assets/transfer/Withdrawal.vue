@@ -285,10 +285,10 @@ export default defineComponent({
       this.loading = true;
       try {
         const { chainId, assetId, decimals } = this.transferAsset;
-        const { talonAddress, address } = this.father;
+        const { takerAddress, address } = this.father;
         const withdrawalFee = timesDecimals(this.fee, this.selectedFeeAsset.decimals);
         const transferInfo = {
-          from: talonAddress,
+          from: takerAddress,
           assetsChainId: chainId,
           assetsId: assetId,
           amount: timesDecimals(this.amount, decimals),

@@ -11,8 +11,8 @@
           <div class="address-wrap flex-center">
             <div class="address">
               {{ $t("assets.assets3") }}
-              {{ talonAddress }}
-              <i class="iconfont icon-fuzhi" @click="$copy(talonAddress)"></i>
+              {{ takerAddress }}
+              <i class="iconfont icon-fuzhi" @click="$copy(takerAddress)"></i>
             </div>
             <i
               class="iconfont icon-tianjia"
@@ -133,9 +133,9 @@
         <div class="address">
           {{ $t("assets.assets3") }}
           <span class="text-7e size-14">
-            {{ superLong(talonAddress, 9) }}
+            {{ superLong(takerAddress, 9) }}
           </span>
-          <i class="iconfont icon-fuzhi" @click="$copy(talonAddress)"></i>
+          <i class="iconfont icon-fuzhi" @click="$copy(takerAddress)"></i>
         </div>
         <i class="iconfont icon-tianjia" @click="showAssetManage = true"></i>
       </div>
@@ -277,7 +277,7 @@ export default defineComponent({
     const tableData = ref([]);
     const transferAsset = ref({});
     onMounted(() => {
-      if (!store.getters.talonAddress) {
+      if (!store.getters.takerAddress) {
         router.push("/");
       }
     });
@@ -293,8 +293,8 @@ export default defineComponent({
     const address = computed(() => {
       return store.getters.currentAddress;
     });
-    const talonAddress = computed(() => {
-      return store.getters.talonAddress;
+    const takerAddress = computed(() => {
+      return store.getters.takerAddress;
     });
     watch(
       () => store.state.assetList,
@@ -429,7 +429,7 @@ export default defineComponent({
       disableTx,
       currentAccount,
       address,
-      talonAddress,
+      takerAddress,
       filterAssets,
       transfer,
       isShowCrossHandle,
@@ -480,8 +480,8 @@ export default defineComponent({
     address() {
       return this.$store.getters.currentAddress;
     },
-    talonAddress() {
-      return this.$store.getters.talonAddress;
+    takerAddress() {
+      return this.$store.getters.takerAddress;
     }
   },
   data() {
@@ -501,7 +501,7 @@ export default defineComponent({
   },
 
   mounted() {
-    if (!this.$store.getters.talonAddress){
+    if (!this.$store.getters.takerAddress){
       this.$router.push("/");
     }
   },

@@ -239,8 +239,8 @@ export default {
     };
   },
   computed: {
-    talonAddress() {
-      return this.$store.state.addressInfo?.address?.Talon;
+    takerAddress() {
+      return this.$store.state.addressInfo?.address?.Taker;
     }
   },
   mounted() {

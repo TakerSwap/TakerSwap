@@ -56,7 +56,7 @@
       </div>
     </div>
     <div class="confirm-wrap">
-      <template v-if="talonAddress">
+      <template v-if="takerAddress">
         <el-button
           type="primary"
           v-if="insufficient"
@@ -118,7 +118,7 @@ export default defineComponent({
   name: "addLiquidity",
   props: {
     assetsList: Array,
-    talonAddress: String,
+    takerAddress: String,
     defaultAsset: Object
   },
   components: {
@@ -484,7 +484,7 @@ export default defineComponent({
         !state.fromAsset.symbol ||
         !state.toAmount ||
         !state.toAsset.symbol ||
-        !props.talonAddress ||
+        !props.takerAddress ||
         state.disableCreate
       );
     });
@@ -496,7 +496,7 @@ export default defineComponent({
         !state.toAmount ||
         !state.toAsset.symbol ||
         state.insufficient ||
-        !props.talonAddress
+        !props.takerAddress
       );
     });
 
@@ -507,7 +507,7 @@ export default defineComponent({
         const tokenA = nerve.swap.token(fromAsset.chainId, fromAsset.assetId); // 资产A的类型
         const tokenB = nerve.swap.token(toAsset.chainId, toAsset.assetId); // 资产B的类型
         const tx = await nerve.swap.swapCreatePair(
-          props.talonAddress,
+          props.takerAddress,
           tokenA,
           tokenB,
           ""
@@ -572,8 +572,8 @@ export default defineComponent({
           amountB
         );
         const deadline = nerve.swap.currentTime() + 300; // 过期时间
-        const fromAddress = props.talonAddress;
-        const toAddress = props.talonAddress;
+        const fromAddress = props.takerAddress;
+        const toAddress = props.takerAddress;
         const tx = await nerve.swap.swapAddLiquidity(
           fromAddress,
           tokenAmountA,

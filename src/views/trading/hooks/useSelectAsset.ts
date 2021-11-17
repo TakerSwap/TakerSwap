@@ -9,7 +9,7 @@ import { divisionDecimals } from "@/api/util";
 import { SwapSymbol, OrderItem, Pager } from "../types";
 
 export default function useSelectAsset() {
-  const { talonAddress } = useStoreState();
+  const { takerAddress } = useStoreState();
   let selectedAsset = null;
   const swapSymbol = ref<SwapSymbol>({} as SwapSymbol);
   const orderList = ref<OrderItem[]>([] as OrderItem[]);
@@ -19,7 +19,7 @@ export default function useSelectAsset() {
     total: 0
   });
   async function selectAsset(fromAsset?: AssetItem, toAsset?: AssetItem) {
-    if (!talonAddress.value || !fromAsset || !toAsset) return;
+    if (!takerAddress.value || !fromAsset || !toAsset) return;
     selectedAsset = {
       from: fromAsset,
       to: toAsset
@@ -37,7 +37,7 @@ export default function useSelectAsset() {
     );
     const data = {
       pairAddress,
-      userAddress: talonAddress.value,
+      userAddress: takerAddress.value,
       pageIndex: pager.index,
       pageSize: pager.size
     };

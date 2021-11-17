@@ -94,7 +94,7 @@
           ></el-checkbox>
         </el-form-item>
         <el-form-item class="confirm-wrap">
-          <el-button type="primary" @click="submitForm" v-if="talonAddress">
+          <el-button type="primary" @click="submitForm" v-if="takerAddress">
             {{ $t("farm.farm19") }}
           </el-button>
           <auth-button v-else></auth-button>
@@ -147,8 +147,8 @@ export default defineComponent({
   },
   setup() {
     const store = useStore();
-    const talonAddress = computed(() => {
-      return store.getters.talonAddress;
+    const takerAddress = computed(() => {
+      return store.getters.takerAddress;
     });
     const { t } = useI18n();
     const toast = useToast();
@@ -294,7 +294,7 @@ export default defineComponent({
           : 1;
         const lockTo = advanced.value ? dayjs(lockedTime).unix() : 1;
         const tx = await nerve.swap.farmCreate(
-          talonAddress.value,
+          takerAddress.value,
           nerve.swap.token(tokenA.chainId, tokenA.assetId),
           nerve.swap.token(tokenB.chainId, tokenB.assetId),
           config.chainId,
@@ -351,7 +351,7 @@ export default defineComponent({
       submitForm,
       back,
       advanced,
-      talonAddress,
+      takerAddress,
       myFarms,
       toMyFarm
     };

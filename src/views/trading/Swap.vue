@@ -69,7 +69,7 @@
       <div class="confirm-wrap">
         <el-button
           type="primary"
-          v-if="talonAddress"
+          v-if="takerAddress"
           :class="{
             deep_color:
               !toAmountError &&
@@ -253,7 +253,7 @@ export default defineComponent({
     let storedSwapPairInfo = {}; // 缓存的交易对全量的兑换路径
     const { t } = useI18n();
     const toast = useToast();
-    const { talonAddress } = useStoreState();
+    const { takerAddress } = useStoreState();
     const state = reactive<SwapState>({
       feeRate: "0.3", // 千三的手续费
       fromAmount: "",
@@ -833,7 +833,7 @@ export default defineComponent({
         !state.toAmount ||
         !state.toAsset?.symbol ||
         state.insufficient ||
-        !talonAddress.value
+        !takerAddress.value
       );
     });
     const impactButton = ref(0);
@@ -932,7 +932,7 @@ export default defineComponent({
       const fromDecimal = state.fromAsset?.decimals;
       const toDecimal = state.toAsset?.decimals;
       try {
-        const fromAddress = talonAddress.value;
+        const fromAddress = takerAddress.value;
         const amountIn = timesDecimals(state.fromAmount, fromDecimal); // 卖出的资产数量
         // 币币交换资产路径，路径中最后一个资产，是用户要买进的资产
         const key = fromAssetKey + "_" + toAssetKey;
@@ -1021,7 +1021,7 @@ export default defineComponent({
       customerFocus,
       maxSale,
       protectPercentInput,
-      talonAddress,
+      takerAddress,
       handleLoading,
       canRefresh,
       copyPair,

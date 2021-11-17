@@ -20,7 +20,7 @@
     </div>
     <div class="account-wrap">
       <div class="asset-icon" v-if="address">
-        <img v-if="talonAddress" src="../assets/img/wallet.svg" alt="" @click="toAsset" />
+        <img v-if="takerAddress" src="../assets/img/wallet.svg" alt="" @click="toAsset" />
         <auth-button ref="authRef" v-else>
           <img src="../assets/img/wallet.svg" alt="" @click="derivedAddress" />
         </auth-button>
@@ -141,8 +141,8 @@ export default defineComponent({
     // const showConnect = store.state.showConnect;
     const { address, chainId, initProvider, connect, disconnect } =
       useEthereum();
-    const talonAddress = computed(() => {
-      return store.getters.talonAddress;
+    const takerAddress = computed(() => {
+      return store.getters.takerAddress;
     });
     initProvider();
     watch(
@@ -258,7 +258,7 @@ export default defineComponent({
       activeIndex,
       toAsset,
       openUrl,
-      talonAddress,
+      takerAddress,
       isCollapse,
       wrongChain,
       switchChain,

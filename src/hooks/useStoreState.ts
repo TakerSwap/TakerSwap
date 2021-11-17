@@ -4,7 +4,7 @@ import { useStore } from "@/store";
 export default function useStoreState() {
   const store = useStore();
   // nerve地址
-  const talonAddress = computed(() => store.getters.talonAddress);
+  const takerAddress = computed(() => store.getters.takerAddress);
   // 账户资产列表
   const assetsList = computed(() => store.state.assetList);
   // 账户信息
@@ -16,7 +16,7 @@ export default function useStoreState() {
   // L1网络地址
   const currentAddress = computed(() => store.getters.currentAddress);
   return {
-    talonAddress,
+    takerAddress,
     assetsList,
     addressInfo,
     chain,

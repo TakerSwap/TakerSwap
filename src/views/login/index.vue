@@ -84,7 +84,7 @@ export default defineComponent({
           account.pub = pub;
           // account.selected = true;
           const { chainId, assetId = 1, prefix } = config;
-          account.address.Talon = nerve.getAddressByPub(
+          account.address.Taker = nerve.getAddressByPub(
             chainId,
             assetId,
             pub,

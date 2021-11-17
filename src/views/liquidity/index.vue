@@ -17,7 +17,7 @@
             </el-button>
           </div>
         </div>
-        <div class="your-liquidity" v-if="talonAddress">
+        <div class="your-liquidity" v-if="takerAddress">
           <h3>{{ $t("liquidity.liquidity4") }}</h3>
           <div class="liquidity-list">
             <div v-for="(item, index) in liquidityList" :key="index">
@@ -50,7 +50,7 @@
               <collapse-transition>
                 <detail-bar
                   v-show="item.showDetail"
-                  :talonAddress="talonAddress"
+                  :takerAddress="takerAddress"
                   :info="item"
                   @loading="handleLoading"
                   @updateList="getData"
@@ -70,7 +70,7 @@
         v-model:show="addLiquidity"
         :defaultAsset="defaultAsset"
         :assetsList="assetsList"
-        :talonAddress="talonAddress"
+        :takerAddress="takerAddress"
         @updateList="getData"
       ></add-liquidity>
     </div>
@@ -107,7 +107,7 @@ export default defineComponent({
     Pagination
   },
   setup() {
-    const { talonAddress } = useStoreState();
+    const { takerAddress } = useStoreState();
     const { assetsList, defaultAsset, hasQuery: addLiquidity } = useAsset();
     let timer: number;
     onMounted(async () => {
@@ -118,7 +118,7 @@ export default defineComponent({
     });
     async function getData() {
       await getUserLiquidity();
-      // state.assetsList = await getAssetList(talonAddress.value);
+      // state.assetsList = await getAssetList(takerAddress.value);
     }
     onBeforeUnmount(() => {
       clearInterval(timer);
@@ -131,9 +131,9 @@ export default defineComponent({
       total: 0
     });
     async function getUserLiquidity() {
-      if (talonAddress.value) {
+      if (takerAddress.value) {
         const res: any = await userLiquidityPage({
-          userAddress: talonAddress.value,
+          userAddress: takerAddress.value,
           pageIndex: pager.index,
           pageSize: pager.size
         });
@@ -174,7 +174,7 @@ export default defineComponent({
       loading.value = status;
     }
     return {
-      talonAddress,
+      takerAddress,
       assetsList,
       defaultAsset,
       addLiquidity,

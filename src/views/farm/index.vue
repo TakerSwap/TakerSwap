@@ -51,11 +51,11 @@
     ></farm-item>
     <farm-item
       v-if="current === 2"
-      :list="talonList"
-      :loading="talonLoading"
+      :list="takerList"
+      :loading="takerLoading"
       @handleLoading="handleLoading"
       :isPool="isPool"
-      isTalon
+      isTaker
     ></farm-item>
   </div>
 </template>
@@ -83,8 +83,8 @@ export default defineComponent({
     // console.log(props, 111)
     const route = useRoute();
     const uniLoading = ref(true);
-    const talonLoading = ref(true);
-    const current = ref(1); // uniFarm -1 / talonFarm -2
+    const takerLoading = ref(true);
+    const current = ref(1); // uniFarm -1 / takerFarm -2
     if (props.isPool) {
       current.value = 2;
     }
@@ -93,7 +93,7 @@ export default defineComponent({
       mortgageValue: false // 只看已质押
     });
     const {
-      talonList,
+      takerList,
       getFarmData,
       getUserFarm,
       uniList,
@@ -117,7 +117,7 @@ export default defineComponent({
       // init();
       await getFarmData(hash);
       getUserFarm(hash);
-      talonLoading.value = false;
+      takerLoading.value = false;
     });
 
     let timer: any;
@@ -135,16 +135,16 @@ export default defineComponent({
       if (current.value === 1) {
         uniLoading.value = status;
       } else {
-        talonLoading.value = status;
+        takerLoading.value = status;
       }
     }
 
     return {
       current,
       uniLoading,
-      talonLoading,
+      takerLoading,
       ...toRefs(state),
-      talonList,
+      takerList,
       uniList,
       handleLoading
     };

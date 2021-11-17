@@ -40,9 +40,9 @@
     border: 1px solid #333364;
     border-radius: 4px;
   }
-  
+
   .el-button {
-    
+
     &.el-button--primary {
       border-radius: 10px;
       background-color: $btnColor;
@@ -74,7 +74,7 @@
       color: $txColor;
     }
   }
-  
+
   .el-tabs {
     .el-tabs__nav-wrap::after {
       width: 0
@@ -85,14 +85,14 @@
       &.is-active,&:hover {
         color: $txColor;
       }
-  
+
     }
     .el-tabs__active-bar {
       background-color: $txColor;;
     }
   }
-  
-  
+
+
   .el-table::before {
     height: 0;
   }
@@ -276,19 +276,19 @@
     color: $labelColor;
   }
   .el-time-panel {
-    background: $BgColor;
-    border: 0;
+    background: $BgColor!important;
+    border: 0!important;
     .el-time-spinner__item {
-      color: $labelColor;
+      color: $labelColor!important;
       &:hover {
-        opacity: 0.65;
-        background: $BgColor;
+        opacity: 0.65!important;
+        background: $BgColor!important;
       }
     }
     .el-time-spinner__item.active:not(.disabled) {
-      color: $txColor;
+      color: $txColor!important;
       &:hover {
-        opacity: 1;
+        opacity: 1!important;
       }
     }
   }

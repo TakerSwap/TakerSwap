@@ -7,6 +7,9 @@ import "element-plus/dist/index.css";
 import { useI18nPlugin } from "@/plugins/i18n";
 import "./config";
 import { useCommonMethods } from "@/plugins/commonMethods";
+import { hackTalonToTaker } from "@/utils/hackBrowserStorage";
+
+hackTalonToTaker();
 
 // toast
 import Toast from "vue-toastification";

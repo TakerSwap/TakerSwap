@@ -2,7 +2,7 @@
   <div class="custom-input">
     <div class="info flex-between">
       <span>{{ label }}</span>
-      <span v-if="talonAddress">{{ $t("public.public12") }}{{ balance }}</span>
+      <span v-if="takerAddress">{{ $t("public.public12") }}{{ balance }}</span>
     </div>
     <div class="inner flex-between">
       <el-input
@@ -12,7 +12,7 @@
         @focus="customerFocus"
         placeholder="0.0"
       >
-        <template #append v-if="talonAddress">
+        <template #append v-if="takerAddress">
           <span @click="max">MAX</span>
         </template>
       </el-input>
@@ -35,7 +35,7 @@
     <AssetsDialog
       v-model:showDialog="showDialog"
       :assetList="list"
-      :showBalance="talonAddress ? true : false"
+      :showBalance="takerAddress ? true : false"
       :showAmount="showAmount"
       :selectedAsset="selectedAsset"
       @filterAsset="filter"
@@ -109,8 +109,8 @@ export default {
     }
   },
   computed: {
-    talonAddress() {
-      return this.$store.getters.talonAddress;
+    takerAddress() {
+      return this.$store.getters.takerAddress;
     }
   },
   mounted() {

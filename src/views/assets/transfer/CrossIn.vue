@@ -270,7 +270,7 @@ export default defineComponent({
           this.heterogeneousInfo;
         const params = {
           multySignAddress: heterogeneousChainMultySignAddress,
-          nerveAddress: this.father.talonAddress,
+          nerveAddress: this.father.takerAddress,
           numbers: this.amount,
           fromAddress: this.father.address,
           contractAddress,

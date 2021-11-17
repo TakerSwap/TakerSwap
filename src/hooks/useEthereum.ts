@@ -144,7 +144,7 @@ export default function useEthereum() {
 
   async function generateAddress(
     address: string,
-    TalonConfig: GenerateAddressConfig,
+    TakerConfig: GenerateAddressConfig,
     NULSConfig: GenerateAddressConfig
   ) {
     let heterogeneousAddress = "",
@@ -182,8 +182,8 @@ export default function useEthereum() {
         throw "Sign error";
       }
     }
-    const { chainId, assetId = 1, prefix } = TalonConfig;
-    const talonAddress = nerve.getAddressByPub(chainId, assetId, pub, prefix);
+    const { chainId, assetId = 1, prefix } = TakerConfig;
+    const takerAddress = nerve.getAddressByPub(chainId, assetId, pub, prefix);
     const NULSAddress = nerve.getAddressByPub(
       NULSConfig.chainId,
       NULSConfig.assetId,
@@ -196,7 +196,7 @@ export default function useEthereum() {
         BSC: heterogeneousAddress,
         Heco: heterogeneousAddress,
         OKExChain: heterogeneousAddress,
-        Talon: talonAddress,
+        Taker: takerAddress,
         NULS: NULSAddress
       },
       pub

@@ -132,7 +132,7 @@ export default defineComponent({
         this.loading = true;
         const { chainId, assetId, decimals } = this.transferAsset;
         const transferInfo = {
-          from: this.father.talonAddress,
+          from: this.father.takerAddress,
           to: this.toAddress,
           assetsChainId: chainId,
           assetsId: assetId,

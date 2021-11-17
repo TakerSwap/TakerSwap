@@ -20,7 +20,7 @@ export default function useAsset() {
           const { fromAsset, toAsset } = route.params;
           const L1Info = _networkInfo[chain.value];
           let defaultSymbol = "ETH";
-          if (L1Info.supported) {
+          if (L1Info?.supported) {
             // defaultSymbol = L1Info.mainAsset;
           }
           const default_eth = val.find(

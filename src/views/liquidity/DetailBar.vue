@@ -54,7 +54,7 @@ import { useToast } from "vue-toastification";
 export default defineComponent({
   props: {
     info: Object,
-    talonAddress: String
+    takerAddress: String
   },
   setup(props, context) {
     const { t } = useI18n();
@@ -145,8 +145,8 @@ export default defineComponent({
       if (!Number(quitNumber.value)) return;
       try {
         context.emit("loading", true);
-        const fromAddress = props.talonAddress;
-        const toAddress = props.talonAddress;
+        const fromAddress = props.takerAddress;
+        const toAddress = props.takerAddress;
         const LP = props.info.lpTokenAmount;
         const tokenA = props.info.token0;
         const tokenB = props.info.token1;

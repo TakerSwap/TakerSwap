@@ -2,7 +2,7 @@
   <div class="farm-details">
     <div class="pc-cont">
       <div class="getLp">
-        <p class="click" @click="toAddLiquidity" v-if="isTalon&&tokenInfo.name">
+        <p class="click" @click="toAddLiquidity" v-if="isTaker&&tokenInfo.name">
           {{ $t("farm.farm7") + " " + tokenInfo.name }}{{ !isPool ? " LP" : "" }}
           <i class=""></i>
         </p>
@@ -32,7 +32,7 @@
               type="primary"
               size="small"
               @click="gether"
-              :disabled="!Number(tokenInfo.pendingReward) || !talonAddress"
+              :disabled="!Number(tokenInfo.pendingReward) || !takerAddress"
             >
               {{ $t("farm.farm21") }}
             </el-button>
@@ -70,8 +70,8 @@
                 :disabled="
                   !Number(tokenInfo.stakeAmount) ||
                   !Number(tokenInfo.pendingReward) ||
-                  !talonAddress ||
-                  (!tokenInfo.isLocked && isTalon)
+                  !takerAddress ||
+                  (!tokenInfo.isLocked && isTaker)
                 "
                 @click="handleLP('minus')"
               ></el-button>
@@ -81,7 +81,7 @@
                 size="small"
                 icon="el-icon-plus"
                 :disabled="
-                  !!!Number(tokenInfo.syrupTokenBalance) || !talonAddress
+                  !!!Number(tokenInfo.syrupTokenBalance) || !takerAddress
                 "
                 @click="handleLP('add')"
               ></el-button>
@@ -105,7 +105,7 @@
             class="btn"
             @click="gether"
             :class="{
-              btn_disabled: !!!Number(tokenInfo.pendingReward) || !talonAddress
+              btn_disabled: !!!Number(tokenInfo.pendingReward) || !takerAddress
             }"
           >
             {{ $t("farm.farm21") }}
@@ -136,8 +136,8 @@
                 :disabled="
                   !Number(tokenInfo.stakeAmount) ||
                   !Number(tokenInfo.pendingReward) ||
-                  !talonAddress ||
-                  (!tokenInfo.isLocked && isTalon)
+                  !takerAddress ||
+                  (!tokenInfo.isLocked && isTaker)
                 "
                 @click="handleLP('minus')"
               ></el-button>
@@ -147,7 +147,7 @@
                 size="small"
                 icon="el-icon-plus"
                 :disabled="
-                  !!!Number(tokenInfo.syrupTokenBalance) || !talonAddress
+                  !!!Number(tokenInfo.syrupTokenBalance) || !takerAddress
                 "
                 @click="handleLP('add')"
               ></el-button>
@@ -174,7 +174,7 @@
       <div
         class="text-4a mt-8"
         @click="toAddLiquidity"
-        v-if="isTalon&&tokenInfo.name"
+        v-if="isTaker && tokenInfo.name"
       >
         {{ $t("farm.farm7") + " " + tokenInfo.name + " Lp" }}
       </div>
@@ -223,8 +223,8 @@ export default defineComponent({
       type: Boolean,
       default: false
     },
-    isTalon: Boolean,
-    talonAddress: String,
+    isTaker: Boolean,
+    takerAddress: String,
     isPool: Boolean
   },
   watch: {
@@ -258,7 +258,7 @@ export default defineComponent({
       getERC20Allowance();
     });
     async function getERC20Allowance() {
-      if (props.isTalon) {
+      if (props.isTaker) {
         needAuth.value = false;
       } else {
         const transfer = new ETransfer();
@@ -303,7 +303,7 @@ export default defineComponent({
 
     async function gether() {
       emit("loading", true);
-      if (props.isTalon) {
+      if (props.isTaker) {
         await farmStake(0);
       } else {
         await LPOperation(2, 0);
@@ -319,7 +319,7 @@ export default defineComponent({
         const farmHash = props.tokenInfo.farmHash || route.params?.hash;
         const ammount = timesDecimals(number, stakeTokenDecimals);
         const tx = await nerve.swap.farmStake(
-          addressInfo.value?.address?.Talon,
+          addressInfo.value?.address?.Taker,
           nerve.swap.token(stakeTokenChainId, stakeTokenAssetId),
           config.chainId,
           config.prefix,
@@ -350,13 +350,13 @@ export default defineComponent({
 
     async function getBalance() {
       balance.value = "";
-      if (props.isTalon) {
+      if (props.isTaker) {
         const { stakeTokenChainId, stakeTokenAssetId, stakeTokenDecimals } =
           props.tokenInfo;
         const res = await getAssetBalance(
           stakeTokenChainId,
           stakeTokenAssetId,
-          addressInfo.value?.address?.Talon
+          addressInfo.value?.address?.Taker
         );
         balance.value = divisionDecimals(res.balance, stakeTokenDecimals);
       } else {
@@ -380,7 +380,7 @@ export default defineComponent({
     async function confirmAddOrMinus(amount) {
       if (addOrMinus.value === "add") {
         loading.value = true;
-        if (props.isTalon) {
+        if (props.isTaker) {
           await farmStake(amount);
         } else {
           await LPOperation(0, amount);
@@ -389,7 +389,7 @@ export default defineComponent({
       } else {
         // farmWithdraw
         loading.value = true;
-        if (props.isTalon) {
+        if (props.isTaker) {
           await farmWithdrawal(amount);
         } else {
           await LPOperation(1, amount);
@@ -409,7 +409,7 @@ export default defineComponent({
         } = props.tokenInfo;
         const ammount = timesDecimals(number, stakeTokenDecimals);
         const tx = await nerve.swap.farmWithdraw(
-          addressInfo.value?.address?.Talon,
+          addressInfo.value?.address?.Taker,
           nerve.swap.token(stakeTokenChainId, stakeTokenAssetId),
           // config.chainId,
           // config.prefix,
@@ -454,7 +454,7 @@ export default defineComponent({
       }
     }
 
-    // talon 签名hash&广播hex
+    // taker 签名hash&广播hex
     async function handleHex(hex) {
       const tAssemble = nerve.deserializationTx(hex);
 

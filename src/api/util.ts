@@ -183,9 +183,9 @@ export function getCurrentAccount(address: string | null): any {
   return currentAccount;
 }
 
-export function getTalonAddress(address: string): string {
+export function getTakerAddress(address: string): string {
   const account = getCurrentAccount(address);
-  return account?.address.Talon;
+  return account?.address.Taker;
 }
 
 export const supportChainList = [

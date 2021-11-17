@@ -37,7 +37,7 @@ try {
 
 export default createStore<State>({
   state: {
-    // hasTalonAddress: false,
+    // hasTakerAddress: false,
     addressInfo: {},
     chainId: "",
     showConnect: false,
@@ -70,8 +70,8 @@ export default createStore<State>({
     currentAddress(state) {
       return state.addressInfo?.address?.Ethereum;
     },
-    talonAddress(state) {
-      return state.addressInfo?.address?.Talon;
+    takerAddress(state) {
+      return state.addressInfo?.address?.Taker;
     }
   },
   mutations: {

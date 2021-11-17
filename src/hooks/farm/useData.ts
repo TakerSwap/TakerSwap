@@ -25,7 +25,7 @@ import useContractAddress from "./useContractAddress"
 
 const url = config.WS_URL;
 
-export interface TalonFarmItem {
+export interface TakerFarmItem {
   farmHash: string;
   name: string;
   lockedTime: number; // 允许解锁时间
@@ -65,18 +65,18 @@ interface UserStakeFarm {
 }
 
 interface Data {
-  talonList: TalonFarmItem[];
+  takerList: TakerFarmItem[];
   uniList: any[];
 }
 
 export default function useData(isPool: boolean) {
   const store = useStore();
   const state = reactive<Data>({
-    talonList: [],
+    takerList: [],
     uniList: []
   });
   let totalUniList: any = [];
-  let totalTalonList: any = [];
+  let totalTakerList: any = [];
   let filterType = "1"; // 排序类型 1.按照收益排名 2.按照流动性排名
   let onlySeeMortgage = false; // 只看已质押
   onBeforeUnmount(() => {
@@ -104,7 +104,7 @@ export default function useData(isPool: boolean) {
         channel: "cmd:" + JSON.stringify(params),
       }
     });
-    data.map((v: TalonFarmItem) => {
+    data.map((v: TakerFarmItem) => {
       v.stakeAmount = 0;
       v.stakeUSD = 0;
       v.pendingRewardUSD = 0;
@@ -112,14 +112,14 @@ export default function useData(isPool: boolean) {
       // @ts-ignore
       v.isLocked = Minus(Times(v.lockedTime, 1000), times) < 0;
     });
-    totalTalonList = [...data];
-    state.talonList = filter(data, filterType, onlySeeMortgage);
+    totalTakerList = [...data];
+    state.takerList = filter(data, filterType, onlySeeMortgage);
   }
 
   const addressInfo = computed(() => store.state.addressInfo);
   // 用户参与的farm
   function getUserFarm(farmHash?: string) {
-    const address = addressInfo.value?.address?.Talon;
+    const address = addressInfo.value?.address?.Taker;
     if (!address) return;
     const channel = "farmListSub";
     subSocket.listen({
@@ -130,7 +130,7 @@ export default function useData(isPool: boolean) {
         channel: channel + ":" + address + (farmHash ? "," + farmHash : "")
       },
       success(data) {
-        const totalList = [...state.talonList];
+        const totalList = [...state.takerList];
         if (totalList.length) {
           data.map((item: UserStakeFarm) => {
             totalList.map(v => {
@@ -145,7 +145,7 @@ export default function useData(isPool: boolean) {
             });
           });
         }
-        state.talonList = filter(totalList, filterType, onlySeeMortgage);
+        state.takerList = filter(totalList, filterType, onlySeeMortgage);
       }
     });
   }
@@ -317,10 +317,10 @@ export default function useData(isPool: boolean) {
       const uniList = filter([...totalUniList], type, mortgage, true);
       state.uniList = uniList;
     }
-    if (totalTalonList.length) {
-      const talonList = filter([...totalTalonList], type, mortgage);
-      console.log(talonList, 11);
-      state.talonList = talonList;
+    if (totalTakerList.length) {
+      const takerList = filter([...totalTakerList], type, mortgage);
+      console.log(takerList, 11);
+      state.takerList = takerList;
     }
   }
 

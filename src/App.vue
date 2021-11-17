@@ -52,7 +52,7 @@ export default {
       locale.value = val === "zh-cn" ? zhCn : enLocale;
     });
     let timer;
-    const takerAddress = computed(() => store.getters.talonAddress);
+    const takerAddress = computed(() => store.getters.takerAddress);
     watch(takerAddress, val => {
       // console.log(val, 6666);
       if (val) {
