@@ -43,7 +43,7 @@
             v-model="showSwitchChain"
             :chainId="chainId"
           >
-            <span @click="showSwitchChain = true">{{ $t("public.public18") }}</span>
+            <p @click="showSwitchChain = true">{{ $t("public.public18") }}</p>
           </SwitchChain>
         </div>
         <div v-else class="address-warp">

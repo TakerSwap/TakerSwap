@@ -58,7 +58,7 @@
       </el-menu-item>-->
       <div class="custom-item">
         <i class="iconfont icon-Docs"></i>
-        <span class="title">
+        <span class="title" style="word-break: keep-all;">
           <a href="https://docs.takerswap.com/" target="_blank">
             {{ $t("header.header6") }}
           </a>

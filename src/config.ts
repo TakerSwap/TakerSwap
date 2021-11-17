@@ -1,9 +1,6 @@
 type EnvType = "beta" | "prod";
 
 const env = process.env.BUILD_ENV as EnvType;
-const IS_DEV = process.env.NODE_ENV === "development";
-
-// console.log(env, 789789, process.env);
 
 function getWSUrl(): string {
   let url;
@@ -11,19 +8,8 @@ function getWSUrl(): string {
     url = "ws://seeda.nuls.io:8009/ws";
     // url = "ws://api.swap.nerve.network/ws"
   } else {
-    /*const { protocol } = window.location;
-    const wsProtocol = protocol === "http:" ? "ws:" : "wss:";
-    url = `${wsProtocol}//api.swap.nerve.network/ws`;*/
     url = "wss://api.swap.nerve.network/ws";
   }
-  // if (IS_DEV) {
-  //   // url = "ws://192.168.1.111:8009/ws";
-  //   url = "ws://seeda.nuls.io:8009/ws";
-  // } else {
-  //   const { host, protocol } = window.location;
-  //   const wsProtocol = protocol === "http:" ? "ws:" : "wss:";
-  //   url = wsProtocol + "//" + host + "/ws";
-  // }
   return url;
 }
 
@@ -39,6 +25,11 @@ const config = {
     assetId: 1,
     prefix: "TNVT",
     symbol: "NVT",
+    NULSConfig: {
+      chainId: 2,
+      assetId: 1,
+      prefix: "tNULS"
+    },
     timeout,
     ETHNET: "ropsten",
     feeAddress: "TNVTdTSPP9oSLvdtVSVFiUYCvXJdj1ZA1nyQU", //提现费用地址
@@ -65,6 +56,11 @@ const config = {
     assetId: 1,
     prefix: "NERVE",
     symbol: "NVT",
+    NULSConfig: {
+      chainId: 1,
+      assetId: 1,
+      prefix: "NULS"
+    },
     timeout,
     ETHNET: "homestead",
     feeAddress: "NERVEepb69f573sRzfoTX9Kn67WeNtXhG6Y6W8",
@@ -78,7 +74,7 @@ const config = {
       Harmony: { chainId: 9, assetId: 159, decimals: 18, symbol: "ONE" },
       Polygon: { chainId: 9, assetId: 160, decimals: 18, symbol: "MATIC" },
       KCC: { chainId: 9, assetId: 161, decimals: 18, symbol: "KCS" },
-      TRON: { chainId: 9, assetId: 0, decimals: 6, symbol: "TRX" }
+      TRON: { chainId: 9, assetId: 218, decimals: 6, symbol: "TRX" }
     },
     trxWithdrawFee: "40000000"
   }

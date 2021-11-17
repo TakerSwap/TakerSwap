@@ -16,20 +16,25 @@
   </div>
 </template>
 
-<script>
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+<script lang="ts">
+import { defineComponent, computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { _networkInfo } from "@/api/util";
 import config from "@/config";
+import useEthereum, { AddChain } from "@/hooks/useEthereum";
 
-export default {
+interface ChainItem extends AddChain {
+  logo: string;
+}
+
+export default defineComponent({
   name: "SwitchChain",
   props: {
     modelValue: Boolean,
     chainId: String
   },
   setup(props, { emit }) {
-    const supportChainList = [];
-    Object.values(_networkInfo).map(v => {
+    const supportChainList: ChainItem[] = [];
+    Object.values(_networkInfo).map((v: any) => {
       if (v.supported) {
         supportChainList.push({
           chainId: v[config.ETHNET],
@@ -53,31 +58,25 @@ export default {
         emit("update:modelValue", val);
       }
     });
-    async function switchChain(item) {
+    const { addEthereumChain, switchEthereumChain } = useEthereum();
+    async function switchChain(item: ChainItem) {
       if (item.chainId === props.chainId) return;
       show.value = false;
       try {
-        const providerType = localStorage.getItem("providerType");
-        const provider = window[providerType];
         if (item.chainName !== "Ethereum") {
           const { logo, ...rest } = item;
-          await provider.request({
-            method: "wallet_addEthereumChain",
-            params: [rest]
-          });
+          await addEthereumChain(rest);
         } else {
-          await provider.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: item.chainId }]
-          });
+          await switchEthereumChain({ chainId: item.chainId });
         }
       } catch (e) {
         //
       }
     }
-    const wrapper = ref(null);
-    function clickHandler(e) {
-      if (!wrapper.value.contains(e.target)) {
+    const wrapper = ref<HTMLElement>();
+    function clickHandler(e: MouseEvent) {
+      const target = e.target;
+      if (target instanceof Node && !wrapper.value?.contains(target)) {
         show.value = false;
       }
     }
@@ -94,7 +93,7 @@ export default {
       wrapper
     };
   }
-};
+});
 </script>
 
 <style lang="scss">

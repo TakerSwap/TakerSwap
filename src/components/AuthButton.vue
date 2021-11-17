@@ -17,15 +17,12 @@
 
 <script>
 import { useStore } from "vuex";
-import nerve from "nerve-sdk-js";
 import { useToast } from "vue-toastification";
-import useEthereum, { getProvider } from "@/hooks/useEthereum";
+import useEthereum from "@/hooks/useEthereum";
 import { useI18n } from "vue-i18n";
 import config from "@/config";
 import { watch } from "vue";
 import { getCurrentAccount } from "@/api/util";
-
-const ethers = require("ethers");
 
 export default {
   props: {
@@ -35,7 +32,7 @@ export default {
     const store = useStore();
     const { t } = useI18n();
     const toast = useToast();
-    const { address, initProvider } = useEthereum();
+    const { address, initProvider, generateAddress } = useEthereum();
     initProvider();
     function showConnectDialog(state) {
       store.commit("changeConnectShow", state);
@@ -60,57 +57,30 @@ export default {
           showConnect();
           return;
         }
-        const provider = getProvider();
-        const EProvider = new ethers.providers.Web3Provider(provider);
-        const jsonRpcSigner = EProvider.getSigner();
-        let message = "Generate L2 address";
-        const signature = await jsonRpcSigner.signMessage(message);
-        const msgHash = ethers.utils.hashMessage(message);
-        const msgHashBytes = ethers.utils.arrayify(msgHash);
-        const recoveredPubKey = ethers.utils.recoverPublicKey(
-          msgHashBytes,
-          signature
-        );
-
-        const account = {
-          address: {
-            Ethereum: address.value,
-            BSC: address.value,
-            Heco: address.value,
-            OKExChain: address.value
-          }
-        };
-        if (recoveredPubKey.startsWith("0x04")) {
-          const compressPub = ethers.utils.computePublicKey(
-            recoveredPubKey,
-            true
-          );
-          const pub = compressPub.slice(2);
-          account.pub = pub;
-          // account.selected = true;
-          const { chainId, assetId = 1, prefix } = config;
-          account.address.Talon = nerve.getAddressByPub(
+        const { chainId, assetId, prefix, NULSConfig } = config;
+        const account = await generateAddress(
+          address.value,
+          {
             chainId,
             assetId,
-            pub,
             prefix
-          );
-          const accountList =
-            JSON.parse(localStorage.getItem("accountList")) || [];
-          const existIndex = accountList.findIndex(v => v.pub === account.pub);
-          // 原来存在就替换，找不到就push
-          if (existIndex > -1) {
-            accountList[existIndex] = account;
-          } else {
-            accountList.push(account);
-          }
-          localStorage.setItem("accountList", JSON.stringify(accountList));
-          store.commit("setCurrentAddress", account);
-          result = true;
-          // const fromPath = route.redirectedFrom?.fullPath || "/";
-          // router.push(fromPath);
+          },
+          NULSConfig
+        );
+        const accountList =
+          JSON.parse(localStorage.getItem("accountList")) || [];
+        const existIndex = accountList.findIndex(v => v.pub === account.pub);
+        // 原来存在就替换，找不到就push
+        if (existIndex > -1) {
+          accountList[existIndex] = account;
+        } else {
+          accountList.push(account);
         }
+        localStorage.setItem("accountList", JSON.stringify(accountList));
+        store.commit("setCurrentAddress", account);
+        result = true;
       } catch (e) {
+        console.log(e, 4444)
         toast.error(t("login.login3"));
       }
       emit("loading", false);
