@@ -22,7 +22,7 @@ const en = {
     public9: "Confirm",
     public10: "Confirm",
     public11: "Deposited",
-    public12: "Balance: ",
+    public12: "Available: ",
     public13: "Copied",
     public14: "Wrong Network",
     public15: "Fee: ",

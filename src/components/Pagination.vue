@@ -11,15 +11,20 @@
   </div>
 </template>
 
-<script>
-import { computed } from "vue";
-export default {
+<script lang="ts">
+import { computed, defineComponent, PropType } from "vue";
+import { Pager } from "@/views/trading/types";
+
+export default defineComponent({
   name: "Pagination",
   props: {
-    pager: Object
+    pager: {
+      type: Object as PropType<Pager>,
+      default: () => {}
+    }
   },
   setup(props, context) {
-    const newPager = computed({
+    const newPager = computed<Pager>({
       get() {
         return props.pager;
       },
@@ -27,7 +32,7 @@ export default {
         context.emit("update:pager", val);
       }
     });
-    function pageChange(index) {
+    function pageChange(index: number) {
       newPager.value.index = index;
       context.emit("change", index);
     }
@@ -36,7 +41,7 @@ export default {
       pageChange
     };
   }
-};
+});
 </script>
 
 <style scoped>

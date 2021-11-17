@@ -49,7 +49,7 @@ export const Division = (nu: Big, arg: Big) => {
 };
 
 // 数字乘以精度系数
-export const timesDecimals = (nu: string, decimals: string | number) => {
+export const timesDecimals = (nu: string, decimals = 8) => {
   if (decimals === 0) {
     return nu;
   }
@@ -61,7 +61,7 @@ export const timesDecimals = (nu: string, decimals: string | number) => {
 /**
  * 数字除以精度系数
  */
-export const divisionDecimals = (nu: string, decimals: string | number) => {
+export const divisionDecimals = (nu: string, decimals = 8) => {
   if (decimals === 0) {
     return nu;
   }
@@ -70,7 +70,7 @@ export const divisionDecimals = (nu: string, decimals: string | number) => {
     .replace(/[,]/g, "");
 };
 
-export function divisionAndFix(nu: string, decimals: string | number, fix = 6) {
+export function divisionAndFix(nu: string, decimals = 8, fix = 6) {
   const newFix = fix ? fix : Number(decimals);
   const str = new BigNumber(Division(nu, Power(decimals))).toFixed(newFix);
   const pointIndex = str.indexOf(".");
@@ -228,7 +228,7 @@ export const supportChainList = [
   }
 ];
 
-export function createRPCParams(method: string) {
+export function createRPCParams(method: string): any {
   return {
     jsonrpc: "2.0",
     id: genId(),

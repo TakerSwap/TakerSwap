@@ -9,7 +9,7 @@ declare module "*.png";
 declare module "*.jpg";
 declare module "*.gif";
 declare module "*.svg";
-declare module "lodashe";
+declare module "lodash";
 declare module "nerve-sdk-js"
 
 declare module "element-ui/lib/locale/lang/*" {

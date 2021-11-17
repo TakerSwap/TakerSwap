@@ -1,12 +1,11 @@
-import { InjectionKey } from "vue";
-import { createStore, Store } from "vuex";
+import { createStore, useStore as useVuexStore } from "vuex";
 import { _networkInfo } from "@/api/util";
 import config from "@/config";
 // @ts-ignore
 import { getAssetList } from "@/model";
 
 // InjectionKey 将store安装到Vue应用程序时提供类型,将类型传递InjectionKey给useStore方法
-interface AssetItem {
+export interface AssetItem {
   chainId: number;
   assetId: number;
   assetKey: string;
@@ -28,9 +27,6 @@ export interface State {
   feeAddress: string | undefined;
   assetList: AssetItem[] | [];
 }
-
-// 定义注入类型
-const key: InjectionKey<Store<State>> = Symbol();
 
 let sessionList = [];
 try {
@@ -104,7 +100,7 @@ export default createStore<State>({
       if (!address) return;
       const res = await getAssetList(address);
       if (res && res.length) {
-        console.log("====set-asset====")
+        // console.log("====set-asset====")
         commit("setAssetList", res);
       }
     }
@@ -114,3 +110,7 @@ export default createStore<State>({
   },
   modules: {}
 });
+
+export function useStore() {
+  return useVuexStore<State>();
+}

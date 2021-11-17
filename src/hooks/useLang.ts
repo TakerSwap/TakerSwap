@@ -1,8 +1,9 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import store from "@/store";
+import { useStore } from "@/store";
 
 export default function useLang() {
+  const store = useStore();
   const { locale } = useI18n();
   const lang = computed(() => {
     return locale.value === "en" ? "CN" : "EN";

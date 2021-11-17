@@ -1,10 +1,10 @@
 <template>
   <div class="overview pd_40_rd_20">
-    <div class="head" v-if="swapSymbol.length !== 0">
+    <div class="head" v-if="swapSymbol.to">
       <div class="top flex-center">
-        <symbol-icon class="img1" :icon="swapSymbol[0]"></symbol-icon>
-        <symbol-icon class="img2" :icon="swapSymbol[1]"></symbol-icon>
-        <div class="pair">{{ swapSymbol[0] }}/{{ swapSymbol[1] }}</div>
+        <symbol-icon class="img1" :icon="swapSymbol.from"></symbol-icon>
+        <symbol-icon class="img2" :icon="swapSymbol.to"></symbol-icon>
+        <div class="pair">{{ swapSymbol.from }}/{{ swapSymbol.to }}</div>
       </div>
       <div class="bottom" v-if="swapRate">{{ swapRate }}</div>
     </div>
@@ -68,20 +68,27 @@
   </div>
 </template>
 
-<script>
-import { computed, defineComponent } from "vue";
+<script lang="ts">
+import { computed, defineComponent, PropType } from "vue";
 import SymbolIcon from "@/components/SymbolIcon.vue";
-import Pagination from "@/components/Pagination";
+import Pagination from "@/components/Pagination.vue";
+import { SwapSymbol, OrderItem, Pager } from "./types";
 export default defineComponent({
   props: {
     swapSymbol: {
-      type: Array,
+      type: Object as PropType<SwapSymbol>,
+      default: () => {}
+    },
+    swapRate: String,
+    list: {
+      type: Array as PropType<OrderItem[]>,
       default: () => []
     },
-    swapRate: [String, Number],
-    list: Array,
     loading: Boolean,
-    pager: Object
+    pager: {
+      type: Object as PropType<Pager>,
+      default: () => {}
+    }
   },
   components: {
     SymbolIcon,

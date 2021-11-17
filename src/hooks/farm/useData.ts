@@ -193,7 +193,7 @@ export default function useData(isPool: boolean) {
         stakeUSD: "",
         stakedTokenAmount: "",
         tatalStakeTokenUSD: "",
-        syrupTokenDecimals: "",
+        syrupTokenDecimals: 0,
         apr: "",
         lpBalance: "", // 质押资产余额
         farmHash: item,

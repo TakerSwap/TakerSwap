@@ -2,7 +2,7 @@
   <img class="symbol-icon" :src="getIconSrc(icon)" alt="" @error="replaceImg" />
 </template>
 
-<script>
+<script lang="ts">
 import { defineComponent } from "vue";
 import { getIconSrc } from "@/api/util";
 import defaultIcon from "@/assets/img/defaultIcon.svg";
@@ -12,8 +12,9 @@ export default defineComponent({
   },
   name: "SymbolIcon",
   setup() {
-    function replaceImg(e) {
-      e.target.src = defaultIcon;
+    function replaceImg(e: Event) {
+      const target = e.target as HTMLImageElement;
+      target.src = defaultIcon;
     }
     return {
       getIconSrc,

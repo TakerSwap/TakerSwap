@@ -77,25 +77,26 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import {
   defineComponent,
-  computed,
+  onBeforeUnmount,
   onMounted,
   reactive,
-  toRefs,
-  onBeforeUnmount,
-  watch
+  ref
 } from "vue";
 import AddLiquidity from "./AddLiquidity.vue";
 import CollapseTransition from "@/components/CollapseTransition.vue";
 import DetailBar from "./DetailBar.vue";
-import { useStore } from "vuex";
-import { useRoute } from "vue-router";
-import { getAssetList, userLiquidityPage } from "@/model";
-import { divisionAndFix } from "@/api/util";
 import SymbolIcon from "@/components/SymbolIcon.vue";
-import Pagination from "@/components/Pagination";
+import Pagination from "@/components/Pagination.vue";
+import { userLiquidityPage } from "@/service/api";
+import { divisionAndFix } from "@/api/util";
+import useStoreState from "@/hooks/useStoreState";
+import useAsset from "@/views/trading/hooks/useAsset";
+
+import { LiquidityItem } from "./types";
+
 export default defineComponent({
   name: "liquidity",
   components: {
@@ -105,87 +106,13 @@ export default defineComponent({
     SymbolIcon,
     Pagination
   },
-  props: {},
-  setup: () => {
-    const route = useRoute();
-    console.log(route.params, 9999);
-    const store = useStore();
-    const talonAddress = computed(() => store.getters.talonAddress);
-    const state = reactive({
-      addLiquidity: false,
-      assetsList: [],
-      liquidityList: [],
-      loading: false,
-      defaultAsset: null
-    });
-    let isLoaded = false;
-    watch(
-      () => store.state.assetList,
-      val => {
-        if (val && val.length) {
-          state.assetsList = val;
-          if (!isLoaded) {
-            // 默认选择资产
-            const defaultAsset = {};
-            const { fromAsset, toAsset } = route.params;
-            const default_nvt = state.assetsList.find(
-              item => item.symbol === "ETH"
-            );
-            if (fromAsset || toAsset) {
-              const from = state.assetsList.find(
-                item => item.assetKey === fromAsset
-              );
-              const to = state.assetsList.find(
-                item => item.assetKey === toAsset
-              );
-              if (from || to) {
-                state.addLiquidity = true;
-                defaultAsset.from = from || default_nvt;
-                state.defaultAsset = { from, to };
-              }
-            } else {
-              state.defaultAsset = {
-                from: default_nvt
-              };
-            }
-            isLoaded = true;
-          }
-        }
-      },
-      {
-        immediate: true,
-        deep: true
-      }
-    );
-    let timer;
+  setup() {
+    const { talonAddress } = useStoreState();
+    const { assetsList, defaultAsset, hasQuery: addLiquidity } = useAsset();
+    let timer: number;
     onMounted(async () => {
       await getData();
-      // await getUserLiquidity();
-      // state.assetsList = await getAssetList(talonAddress.value);
-      /*if (state.assetsList.length) {
-        const defaultAsset = {};
-        const { fromAsset, toAsset } = route.params;
-        const default_nvt = state.assetsList.find(
-          item => item.symbol === "NVT"
-        );
-        if (fromAsset || toAsset) {
-          const from = state.assetsList.find(
-            item => item.assetKey === fromAsset
-          );
-          const to = state.assetsList.find(item => item.assetKey === toAsset);
-          if (from || to) {
-            state.addLiquidity = true;
-            defaultAsset.from = from || default_nvt;
-            state.defaultAsset = { from, to };
-          }
-        } else {
-          state.defaultAsset = {
-            from: default_nvt
-          };
-        }
-      }
-      console.log(state.defaultAsset, 99999)*/
-      timer = setInterval(async () => {
+      timer = window.setInterval(async () => {
         await getData();
       }, 5000);
     });
@@ -196,6 +123,8 @@ export default defineComponent({
     onBeforeUnmount(() => {
       clearInterval(timer);
     });
+
+    const liquidityList = ref<LiquidityItem[]>([] as LiquidityItem[]);
     const pager = reactive({
       index: 1,
       size: 5,
@@ -203,38 +132,35 @@ export default defineComponent({
     });
     async function getUserLiquidity() {
       if (talonAddress.value) {
-        const res = await userLiquidityPage({
+        const res: any = await userLiquidityPage({
           userAddress: talonAddress.value,
           pageIndex: pager.index,
           pageSize: pager.size
         });
         if (res) {
           pager.total = res.total || 0;
-          res.list.map(v => {
+          res.list.map((v: LiquidityItem) => {
             const info = v.lpTokenAmount;
-            const amountSlice = divisionAndFix(
-              info.amount,
-              info.token.decimals,
-              2
-            );
-            v.amountSlice = amountSlice;
+            v.amountSlice = divisionAndFix(info.amount, info.token.decimals, 2);
             v.amount = divisionAndFix(
               info.amount,
               info.token.decimals,
               info.token.decimals
             );
-            const exist = state.liquidityList.find(
+            const exist = liquidityList.value.find(
               item => v.pairAddress === item.pairAddress
             );
             v.showDetail = exist ? exist.showDetail : false;
           });
-          state.liquidityList = res.list.filter(item => item.amount !== "0");
+          liquidityList.value = res.list.filter(
+            (item: LiquidityItem) => item.amount !== "0"
+          );
         }
       }
     }
 
-    function toggleDetail(item) {
-      for (let liquidityItem of state.liquidityList) {
+    function toggleDetail(item: LiquidityItem) {
+      for (let liquidityItem of liquidityList.value) {
         if (item.amount === liquidityItem.amount) {
           item.showDetail = !item.showDetail;
         } else {
@@ -243,12 +169,17 @@ export default defineComponent({
       }
     }
 
-    function handleLoading(loading) {
-      state.loading = loading;
+    const loading = ref(false);
+    function handleLoading(status: boolean) {
+      loading.value = status;
     }
     return {
       talonAddress,
-      ...toRefs(state),
+      assetsList,
+      defaultAsset,
+      addLiquidity,
+      liquidityList,
+      loading,
       toggleDetail,
       handleLoading,
       getData,

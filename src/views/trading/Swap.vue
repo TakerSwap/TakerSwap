@@ -85,8 +85,9 @@
           "
           @click="swapTrade"
         >
-          {{confirmText
-           /* insufficient
+          {{
+            confirmText
+            /* insufficient
               ? $t("trading.trading17")
               : impactButton === 1
               ? $t("trading.trading19")
@@ -187,21 +188,14 @@
           </div>
           <div class="text-error" v-if="protectError">{{ protectError }}</div>
         </div>
-        <!-- <div class="bottom">
-          <el-button @click="toggleSettingDialog">
-            {{ $t("public.public8") }}
-          </el-button>
-          <el-button type="primary" @click="toggleSettingDialog">
-            {{ $t("public.public9") }}
-          </el-button>
-        </div> -->
       </div>
     </el-dialog>
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import {
+  PropType,
   computed,
   defineComponent,
   nextTick,
@@ -214,7 +208,8 @@ import {
   getCurrentInstance
 } from "vue";
 import CustomInput from "@/components/CustomInput.vue";
-import AuthButton from "@/components/AuthButton";
+import AuthButton from "@/components/AuthButton.vue";
+import SymbolIcon from "@/components/SymbolIcon.vue";
 import {
   Division,
   divisionAndFix,
@@ -227,14 +222,14 @@ import {
   formatFloat
 } from "@/api/util";
 import { useI18n } from "vue-i18n";
-import { getWholeTradeExactIn, getSwapPairInfo } from "@/model";
+import { getWholeTradeExactIn } from "@/service/api";
 import nerve from "nerve-sdk-js";
-import { useStore } from "vuex";
 import { useToast } from "vue-toastification";
-import SymbolIcon from "@/components/SymbolIcon.vue";
-import { NTransfer } from "@/api/api";
 import config from "@/config";
-import { useRoute } from "vue-router";
+import useStoreState from "@/hooks/useStoreState";
+import useBroadcastNerveHex from "@/hooks/useBroadcastNerveHex";
+import { ComponentInternalInstance } from "@vue/runtime-core";
+import { AssetItem, DefaultAsset, SwapState, WholeTradeExactIn } from "./types";
 
 export default defineComponent({
   name: "swap",
@@ -244,21 +239,23 @@ export default defineComponent({
     AuthButton
   },
   props: {
-    assetsList: Array,
-    defaultAsset: Object
+    assetsList: {
+      type: Array as PropType<AssetItem[]>,
+      default: () => []
+    },
+    defaultAsset: {
+      type: Object as PropType<DefaultAsset>,
+      default: () => {}
+    }
   },
   setup(props, context) {
-    const { proxy } = getCurrentInstance();
+    const { proxy } = getCurrentInstance() as ComponentInternalInstance;
     let storedSwapPairInfo = {}; // 缓存的交易对全量的兑换路径
     const { t } = useI18n();
-    const store = useStore();
-    const route = useRoute();
     const toast = useToast();
-    const talonAddress = computed(() => {
-      return store.getters.talonAddress;
-    });
-    const state = reactive({
-      feeRate: 0.3, // 千三的手续费
+    const { talonAddress } = useStoreState();
+    const state = reactive<SwapState>({
+      feeRate: "0.3", // 千三的手续费
       fromAmount: "",
       toAmount: "",
       fromAsset: null,
@@ -269,21 +266,21 @@ export default defineComponent({
       disableWatchToAmount: false, // 停止监听toAmount
       insufficient: false, // 流动性不足
       protectPercent: "0.5", // 划点保护
-      protectSets: ["0.5", "1", "3"],
+      // protectSets: ["0.5", "1", "3"],
       routesSymbol: [],
-      loading: false,
-      fee: 0,
+      fee: "",
       priceImpact: "", // 价格影响
       customerType: "",
       protectError: "",
       showLoading: false
     });
 
-    function handleLoading(status) {
-      state.loading = status;
+    const loading = ref(false);
+    function handleLoading(status: boolean) {
+      loading.value = status;
     }
     // 选择swap资产 asset-选择的资产, type-from/to
-    async function selectAsset(asset, type) {
+    async function selectAsset(asset: AssetItem, type: string) {
       // console.log(asset, type, 9999);
       if (!asset) return false;
       state.fromAmount = "";
@@ -291,7 +288,7 @@ export default defineComponent({
       state.priceImpact = "";
       if (type === "from") {
         if (state.toAsset && state.toAsset.assetKey === asset.assetKey) {
-          state.toAsset = { ...state.fromAsset };
+          state.toAsset = { ...state.fromAsset } as AssetItem;
           state.fromAsset = asset;
         } else {
           state.fromAsset = asset;
@@ -300,13 +297,13 @@ export default defineComponent({
               state.fromAsset &&
               state.fromAsset.assetKey === state.toAsset.assetKey
             ) {
-              state.toAsset = {};
+              state.toAsset = null;
             }
           }
         }
       } else {
         if (state.fromAsset && asset.assetKey === state.fromAsset.assetKey) {
-          state.fromAsset = { ...state.toAsset };
+          state.fromAsset = { ...state.toAsset } as AssetItem;
           state.toAsset = asset;
         } else {
           state.toAsset = asset;
@@ -314,7 +311,7 @@ export default defineComponent({
             state.fromAsset &&
             state.fromAsset.assetKey === state.toAsset.assetKey
           ) {
-            state.fromAsset = {};
+            state.fromAsset = null;
           }
         }
       }
@@ -341,7 +338,7 @@ export default defineComponent({
       }
     }
 
-    function customerFocus(type) {
+    function customerFocus(type: string) {
       state.customerType = type;
     }
 
@@ -351,12 +348,12 @@ export default defineComponent({
       if (!isTemp) {
         fromAssetKey = state.fromAsset?.assetKey;
         toAssetKey = state.toAsset?.assetKey;
-        tokenInAmount = state.fromAmount || 1;
+        tokenInAmount = state.fromAmount || "1";
         tokenInDecimal = state.fromAsset?.decimals;
       } else {
         fromAssetKey = state.toAsset?.assetKey;
         toAssetKey = state.fromAsset?.assetKey;
-        tokenInAmount = state.toAmount || 1;
+        tokenInAmount = state.toAmount || "1";
         tokenInDecimal = state.toAsset?.decimals;
       }
       const key = fromAssetKey + "_" + toAssetKey;
@@ -366,11 +363,11 @@ export default defineComponent({
           // 如果存在切不需要刷新 则跳过
           // context.emit("updateRate", storedSwapPairInfo[key].swapRate);
         } else {
-          const res = await getWholeTradeExactIn({
+          const res = (await getWholeTradeExactIn({
             tokenInStr: fromAssetKey,
             tokenOutStr: toAssetKey,
             tokenInAmount: timesDecimals(tokenInAmount, tokenInDecimal)
-          });
+          })) as WholeTradeExactIn[];
           const pairsInfo = {};
           if (res.length) {
             for (let i = 0; i < res.length; i++) {
@@ -400,7 +397,7 @@ export default defineComponent({
               refreshRate();
             }
             if (!isTemp) {
-              getSwapAmount(1, "to", true);
+              getSwapAmount("1", "to", true);
             }
           }
           storedSwapPairInfo[key] = pairsInfo;
@@ -431,7 +428,7 @@ export default defineComponent({
           state.fromAmount = state.toAmount;
         }
       }
-      getSwapAmount(1, "to", true);
+      getSwapAmount("1", "to", true);
       context.emit("selectAsset", state.fromAsset, state.toAsset);
     }
 
@@ -444,6 +441,7 @@ export default defineComponent({
           if (!state.fromAsset || !state.toAsset) return false;
           if (
             !Number(state.fromAsset.available) ||
+            // @ts-ignore
             Minus(state.fromAsset.available, val) < 0
           ) {
             state.fromAmountError =
@@ -461,7 +459,7 @@ export default defineComponent({
             if (res) {
               state.disableWatchToAmount = true; // 避免进入无限循环计算
               state.toAmount = res;
-              getSwapRate();
+              getSwapRate(false);
               await nextTick();
               state.disableWatchToAmount = false;
             } else {
@@ -493,7 +491,7 @@ export default defineComponent({
             if (res) {
               state.disableWatchFromAmount = true;
               state.fromAmount = res;
-              getSwapRate();
+              getSwapRate(false);
               await nextTick();
               state.disableWatchFromAmount = false;
             } else {
@@ -527,14 +525,18 @@ export default defineComponent({
       val => {
         if (val) {
           if (state.fromAsset) {
-            state.fromAsset = val.find(
-              asset => asset.assetKey === state.fromAsset.assetKey
+            const fromAsset = val.find(
+              asset =>
+                state.fromAsset && asset.assetKey === state.fromAsset.assetKey
             );
+            state.fromAsset = fromAsset || null;
           }
           if (state.toAsset) {
-            state.toAsset = val.find(
-              asset => asset.assetKey === state.toAsset.assetKey
+            const toAsset = val.find(
+              asset =>
+                state.toAsset && asset.assetKey === state.toAsset.assetKey
             );
+            state.toAsset = toAsset || null;
           }
         }
       },
@@ -566,7 +568,7 @@ export default defineComponent({
     async function forceRefresh() {
       if (timer) clearInterval(timer);
       await refresh();
-      timer = setInterval(async () => {
+      timer = window.setInterval(async () => {
         await refresh();
       }, 5000);
     }
@@ -590,7 +592,7 @@ export default defineComponent({
         } else {
           state.fromAmount = res;
         }
-        getSwapRate();
+        getSwapRate(false);
         await nextTick();
         state.disableWatchFromAmount = false;
         state.disableWatchToAmount = false;
@@ -598,9 +600,9 @@ export default defineComponent({
         getSwapRate(true);
       }
     }
-    let timer; // 10s刷新一次交易对信息&兑换比例
+    let timer: number; // 5s刷新一次交易对信息&兑换比例
     onMounted(() => {
-      timer = setInterval(async () => {
+      timer = window.setInterval(async () => {
         await refresh();
       }, 5000);
     });
@@ -609,10 +611,19 @@ export default defineComponent({
     });
 
     // 计算能兑换的数量 type- 计算from/to的数量, getInitialRate- 计算兑换比例1/n
-    function getSwapAmount(amount, type, getInitialRate = false) {
+    function getSwapAmount(
+      amount: string,
+      type: string,
+      getInitialRate = false
+    ) {
       const fromAssetKey = state.fromAsset?.assetKey;
       const toAssetKey = state.toAsset?.assetKey;
-      if (fromAssetKey && toAssetKey && !isNaN(amount) && amount > 0) {
+      if (
+        fromAssetKey &&
+        toAssetKey &&
+        !isNaN(Number(amount)) &&
+        Number(amount) > 0
+      ) {
         const key = fromAssetKey + "_" + toAssetKey;
         const pairsInfo = storedSwapPairInfo[key];
 
@@ -623,9 +634,9 @@ export default defineComponent({
           return [0, 0];
         }
         const fromDecimal =
-          type === "from" ? state.toAsset.decimals : state.fromAsset.decimals;
+          type === "from" ? state.toAsset?.decimals : state.fromAsset?.decimals;
         const toDecimal =
-          type === "from" ? state.fromAsset.decimals : state.toAsset.decimals;
+          type === "from" ? state.fromAsset?.decimals : state.toAsset?.decimals;
         amount = timesDecimals(amount, fromDecimal);
         // console.log(pairsInfo, 66, amount, fromDecimal);
         const pairs = Object.values(pairsInfo);
@@ -640,7 +651,7 @@ export default defineComponent({
               bestExactInForOne.tokenAmountOut.amount,
               toDecimal
             );
-            context.emit("updateRate", toAmount + state.toAsset.symbol);
+            context.emit("updateRate", toAmount + state.toAsset?.symbol);
           }
           const bestExact =
             type === "to"
@@ -652,12 +663,12 @@ export default defineComponent({
             const outAmount = bestExact.tokenAmountOut.amount.toString();
             // console.log(inAmount, outAmount, "===---===", amount, type, state.customerType);
             const tokenPathArray = bestExact.path;
-            const routesSymbol = [];
-            bestExact.path.map(v => {
+            const routesSymbol: string[] = [];
+            bestExact.path.map((v: any) => {
               const asset = props.assetsList.find(
                 asset => asset.assetKey === v.chainId + "-" + v.assetId
               );
-              routesSymbol.push(asset.symbol);
+              asset && routesSymbol.push(asset.symbol);
             });
             state.routesSymbol = routesSymbol;
             const pairsArray = [];
@@ -692,15 +703,15 @@ export default defineComponent({
     }
 
     // 通过输入from获取最佳兑换信息
-    function bestTradeExactIn(amount, pairs) {
+    function bestTradeExactIn(amount: string, pairs: any) {
       const tokenAmountIn = nerve.swap.tokenAmount(
-        state.fromAsset.chainId,
-        state.fromAsset.assetId,
+        state.fromAsset?.chainId,
+        state.fromAsset?.assetId,
         amount
       );
       const tokenOut = nerve.swap.token(
-        state.toAsset.chainId,
-        state.toAsset.assetId
+        state.toAsset?.chainId,
+        state.toAsset?.assetId
       );
       const maxPairSize = 3;
       const res = nerve.swap.bestTradeExactIn(
@@ -717,14 +728,14 @@ export default defineComponent({
       }
     }
     // 通过输入to 获取最佳兑换信息
-    function bestTradeExactOut(amount, pairs) {
+    function bestTradeExactOut(amount: string, pairs: any) {
       const tokenIn = nerve.swap.token(
-        state.fromAsset.chainId,
-        state.fromAsset.assetId
+        state.fromAsset?.chainId,
+        state.fromAsset?.assetId
       );
       const tokenAmountOut = nerve.swap.tokenAmount(
-        state.toAsset.chainId,
-        state.toAsset.assetId,
+        state.toAsset?.chainId,
+        state.toAsset?.assetId,
         amount
       );
       const maxPairSize = 3;
@@ -746,7 +757,7 @@ export default defineComponent({
       }
     }
 
-    function getSwapRate(clear) {
+    function getSwapRate(clear = false) {
       if (clear) {
         swapRate.value = "";
         // console.log(state.toAsset.symbol, 9888);
@@ -755,15 +766,15 @@ export default defineComponent({
       const fromAmount = state.fromAmount;
       const toAmount = state.toAmount;
       if (swapDirection.value === "from-to") {
-        swapRate.value = `1 ${state.fromAsset.symbol} ≈ ${formatFloat(
+        swapRate.value = `1 ${state.fromAsset?.symbol} ≈ ${formatFloat(
           Division(toAmount, fromAmount).toFixed(),
           1
-        )} ${state.toAsset.symbol}`;
+        )} ${state.toAsset?.symbol}`;
       } else {
-        swapRate.value = `1 ${state.toAsset.symbol} ≈ ${formatFloat(
+        swapRate.value = `1 ${state.toAsset?.symbol} ≈ ${formatFloat(
           Division(fromAmount, toAmount).toFixed(),
           1
-        )} ${state.fromAsset.symbol}`;
+        )} ${state.fromAsset?.symbol}`;
       }
     }
 
@@ -773,8 +784,8 @@ export default defineComponent({
       //   state.protectPercent = 0.5;
       // }
       return fixNumber(
-        Times(state.toAmount, 1 - state.protectPercent / 100).toFixed(),
-        state.toAsset.decimals
+        Times(state.toAmount, 1 - Number(state.protectPercent) / 100).toFixed(),
+        state.toAsset?.decimals
       );
     });
 
@@ -782,16 +793,19 @@ export default defineComponent({
       // 最多卖出
       if (!state.fromAmount) return "";
       return fixNumber(
-        Times(state.fromAmount, 1 + state.protectPercent / 100).toFixed(),
-        state.fromAmount.decimals
+        Times(
+          state.fromAmount,
+          1 + Number(state.protectPercent) / 100
+        ).toFixed(),
+        state.fromAsset?.decimals
       );
     });
 
     const fee = computed(() => {
       if (!state.fromAsset) return "";
       return fixNumber(
-        Times(state.fromAmount, divisionDecimals(0.3, 2)).toFixed(),
-        state.fromAmount.decimals
+        Times(state.fromAmount, divisionDecimals("0.3", 2)).toFixed(),
+        state.fromAsset?.decimals
       );
     });
 
@@ -801,10 +815,10 @@ export default defineComponent({
     function toggleDirection() {
       swapDirection.value =
         swapDirection.value === "from-to" ? "to-from" : "from-to";
-      getSwapRate();
+      getSwapRate(false);
     }
 
-    function max(type) {
+    function max(type: string) {
       if (type === "from") {
         state.fromAmount = (state.fromAsset && state.fromAsset.available) || "";
       } else {
@@ -813,7 +827,7 @@ export default defineComponent({
     }
 
     const disableTx = computed(() => {
-      return !!(
+      return (
         !state.fromAmount ||
         !state.fromAsset?.symbol ||
         !state.toAmount ||
@@ -825,13 +839,13 @@ export default defineComponent({
     const impactButton = ref(0);
     const priceImpactFloat = computed(() => {
       const tempPriceImpact = state.priceImpact.toString().slice(0, 6);
-      let str = tofix(Times(tempPriceImpact, 100), 2, -1);
-
+      let str = tofix(Times(tempPriceImpact, 100).toFixed(), 2, -1);
+      // @ts-ignore
       if (Minus(str, 0.01) < 0) {
         return `<${0.01}%`;
       }
       str += "%";
-      return str;
+      return str + "";
     });
 
     watch(
@@ -840,10 +854,12 @@ export default defineComponent({
         impactButton.value = 0;
         if (!val) return;
         const tempPriceImpact = state.priceImpact.toString().slice(0, 6);
-        let str = tofix(Times(tempPriceImpact, 100), 2, -1);
+        let str = tofix(Times(tempPriceImpact, 100).toFixed(), 2, -1);
+        // @ts-ignore
         if (Minus(str, 10) > 0) {
           impactButton.value = 1;
         }
+        // @ts-ignore
         if (Minus(str, 20) > 0) {
           impactButton.value = 2;
         }
@@ -858,7 +874,7 @@ export default defineComponent({
       } else if (impactButton.value === 2) {
         return t("trading.trading20");
       } else {
-        return state.fromAmountError.value || t("public.public10");
+        return state.fromAmountError || t("public.public10");
       }
       // insufficient
       //     ? $t("trading.trading17")
@@ -867,15 +883,17 @@ export default defineComponent({
       //         : fromAmountError || $t("public.public10")
     });
 
-
     const priceImpactColor = computed(() => {
       let { value } = priceImpactFloat;
       if (!value) return "";
       const floatNum = Division(value.split("%")[0], 100);
+      // @ts-ignore
       if (Minus(floatNum, 0.003) < 0) {
         return "green";
+        // @ts-ignore
       } else if (Minus(floatNum, 0.003) > 0 && Minus(floatNum, 0.03) < 0) {
         return "";
+        // @ts-ignore
       } else if (Minus(floatNum, 0.03) > 0) {
         return "#c33030";
       } else {
@@ -892,13 +910,13 @@ export default defineComponent({
       settingDialog.value = !settingDialog.value;
     }
 
-    function protectPercentInput(val) {
+    function protectPercentInput(val: string) {
       let decimals = 2;
       const patrn = new RegExp(
         "^([1-9][\\d]{0,20}|0)(\\.[\\d]{0," + decimals + "})?$"
       );
       if (patrn.exec(val) || val === "") {
-        if (val > 100) {
+        if (Number(val) > 100) {
           state.protectPercent = "100";
         } else {
           state.protectPercent = val;
@@ -906,12 +924,13 @@ export default defineComponent({
       }
     }
 
+    const { handleHex } = useBroadcastNerveHex();
     async function swapTrade() {
-      state.loading = true;
-      const fromAssetKey = state.fromAsset.assetKey;
-      const toAssetKey = state.toAsset.assetKey;
-      const fromDecimal = state.fromAsset.decimals;
-      const toDecimal = state.toAsset.decimals;
+      loading.value = true;
+      const fromAssetKey = state.fromAsset?.assetKey;
+      const toAssetKey = state.toAsset?.assetKey;
+      const fromDecimal = state.fromAsset?.decimals;
+      const toDecimal = state.toAsset?.decimals;
       try {
         const fromAddress = talonAddress.value;
         const amountIn = timesDecimals(state.fromAmount, fromDecimal); // 卖出的资产数量
@@ -938,7 +957,7 @@ export default defineComponent({
           toAddress,
           remark
         );
-        const res = await handleHex(tx.hex);
+        const res: any = await handleHex(tx.hex);
         if (res && res.hash) {
           context.emit("selectAsset", state.fromAsset, state.toAsset);
           toast.success(t("transfer.transfer14"));
@@ -952,14 +971,10 @@ export default defineComponent({
         console.log(e, "Swap-error");
         toast.error(e.message || e);
       }
-      state.loading = false;
+      loading.value = false;
     }
 
-    const addressInfo = computed(() => {
-      return store.state.addressInfo;
-    });
-
-    async function handleHex(hex) {
+    /*async function handleHex(hex) {
       const tAssemble = nerve.deserializationTx(hex);
       const transfer = new NTransfer({ chain: "NERVE" });
       const txHex = await transfer.getTxHex({
@@ -969,22 +984,23 @@ export default defineComponent({
       });
       console.log(txHex, "===txHex===");
       return await transfer.broadcastHex(txHex);
-    }
+    }*/
 
     // 复制交易对url
     function copyPair() {
       const { fromAsset, toAsset } = state;
-      const fromKey = fromAsset.assetKey;
-      const toKey = toAsset.assetKey;
+      const fromKey = fromAsset?.assetKey;
+      const toKey = toAsset?.assetKey;
       if (!fromKey || !toKey) return;
       const defaultUrl = window.location.origin;
       const routeName = "trading"; //route.name;
-      // console.log(fromKey, toKey, 222, `${defaultUrl}/${routeName}/${fromKey}/${toKey}`, route)
-      // console.log(proxy, 666)
+      // @ts-ignore
       proxy.$copy(`${defaultUrl}/${routeName}/${fromKey}/${toKey}`);
     }
 
     return {
+      loading,
+      protectSets: ["0.5", "1", "3"],
       ...toRefs(state),
       minReceive,
       fee,
