@@ -100,7 +100,7 @@
 import { computed, ref, watch, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import useLang from "@/hooks/useLang";
-import { listen } from "@/api/websocket";
+import { listen } from "@/service/socket/websocket";
 import config from "@/config";
 
 const url = config.WS_URL;
@@ -136,14 +136,14 @@ export default {
     watch(
       () => route.path,
       val => {
-        console.log(val, 666);
+        // console.log(val, 666);
         const path = val?.split("/")[1];
         if (path === "create-farm") {
           activeIndex.value = "createFarm";
         } else {
           activeIndex.value = path || "trading";
         }
-        console.log(activeIndex, 45646);
+        // console.log(activeIndex, 45646);
       },
       {
         immediate: true

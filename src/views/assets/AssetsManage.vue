@@ -52,6 +52,7 @@
 <script>
 import SymbolIcon from "@/components/SymbolIcon.vue";
 import _ from "lodash";
+import storage from "@/utils/storage";
 export default {
   components: {
     SymbolIcon
@@ -140,14 +141,13 @@ export default {
       });
       const currentAccount = this.$store.state.addressInfo;
       currentAccount.visiableAssets = select;
-      const accountList =
-        JSON.parse(localStorage.getItem("accountList") || "") || [];
+      const accountList = storage.get("local", "accountList") || [];
       accountList.map(v => {
         if (v.pub === currentAccount.pub) {
           v.visiableAssets = select;
         }
       });
-      localStorage.setItem("accountList", JSON.stringify(accountList));
+      storage.set("local", "accountList", accountList);
 
       this.$store.commit("setCurrentAddress", currentAccount);
       this.$emit("addAssets");

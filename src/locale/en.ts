@@ -110,7 +110,7 @@ const en = {
     liquidity3: "Add Liquidity",
     liquidity4: "Your Liquidity",
     liquidity5: "Details",
-    liquidity6: "Close",
+    liquidity6: "Remove",
     liquidity7: "Add Liquidity",
     liquidity8: "Pool Share",
     liquidity9: "Confirm",
@@ -119,7 +119,8 @@ const en = {
     liquidity12: "Create liquidity",
     liquidity13: "Create pair",
     liquidity14: "Pair created. Please add liquidity",
-    liquidity15: "You will receive"
+    liquidity15: "You will receive",
+    liquidity16: "Exceed the liquidity provided"
   },
   login: {
     login1: "Please generate L2 address",

@@ -1,9 +1,12 @@
 import { BigNumber } from "bignumber.js";
 import copy from "copy-to-clipboard";
 import config from "@/config";
+import storage from "@/utils/storage";
 
-import ethLogo from "@/assets/img/eth-logo.png";
-import bscLogo from "@/assets/img/BSC.svg";
+import ethLogo from "@/assets/img/chainLogo/ETH.png";
+import bscLogo from "@/assets/img/chainLogo/BSC.svg";
+import nulsLogo from "@/assets/img/chainLogo/NULS.png";
+import nerveLogo from "@/assets/img/chainLogo/NERVE.png";
 
 interface Obj {
   [key: string]: unknown;
@@ -49,10 +52,7 @@ export const Division = (nu: Big, arg: Big) => {
 };
 
 // 数字乘以精度系数
-export const timesDecimals = (nu: string, decimals = 8) => {
-  if (decimals === 0) {
-    return nu;
-  }
+export const timesDecimals = (nu: Big, decimals = 8) => {
   return new BigNumber(Times(nu, Power(decimals.toString()).toString()))
     .toFormat()
     .replace(/[,]/g, "");
@@ -61,16 +61,13 @@ export const timesDecimals = (nu: string, decimals = 8) => {
 /**
  * 数字除以精度系数
  */
-export const divisionDecimals = (nu: string, decimals = 8) => {
-  if (decimals === 0) {
-    return nu;
-  }
+export const divisionDecimals = (nu: Big, decimals = 8) => {
   return new BigNumber(Division(nu, Power(decimals.toString()).toString()))
     .toFormat()
     .replace(/[,]/g, "");
 };
 
-export function divisionAndFix(nu: string, decimals = 8, fix = 6) {
+export function divisionAndFix(nu: Big, decimals = 8, fix = 6) {
   const newFix = fix ? fix : Number(decimals);
   const str = new BigNumber(Division(nu, Power(decimals))).toFixed(newFix);
   const pointIndex = str.indexOf(".");
@@ -154,15 +151,6 @@ export const superLong = (str: string, len: number) => {
   }
 };
 
-export const chainToSymbol = {
-  NULS: "NULS",
-  NERVE: "NVT",
-  Ethereum: "ETH",
-  BSC: "BNB",
-  Heco: "HT",
-  OKExChain: "OKT"
-};
-
 export function getIconSrc(icon: string) {
   return "https://nuls-cf.oss-us-west-1.aliyuncs.com/icon/" + icon + ".png";
 }
@@ -173,60 +161,18 @@ export function genId() {
 
 export function getCurrentAccount(address: string | null): any {
   if (!address) return null;
-  const accountList =
-    JSON.parse(localStorage.getItem("accountList") || "null") || [];
-  const currentAccount = accountList.find((item: any) => {
+  const accountList = storage.get("local", "accountList") || [];
+  return accountList.find((item: any) => {
     return Object.keys(item.address).find(
       v => item.address[v].toLowerCase() === address.toLowerCase()
     );
   });
-  return currentAccount;
 }
 
 export function getTakerAddress(address: string): string {
   const account = getCurrentAccount(address);
   return account?.address.Taker;
 }
-
-export const supportChainList = [
-  // { label: "NERVE", value: "NERVE", symbol: "NVT", chainId: config.chainId, assetId: 1 },
-  {
-    label: "Ethereum",
-    value: "Ethereum",
-    symbol: "ETH",
-    ropsten: "0x3",
-    homestead: "0x1",
-    chainId: 101,
-    assetId: 1
-  },
-  {
-    label: "BSC",
-    value: "BSC",
-    symbol: "BNB",
-    ropsten: "0x61",
-    homestead: "0x38",
-    chainId: 102,
-    assetId: 1
-  },
-  {
-    label: "Heco",
-    value: "Heco",
-    symbol: "HT",
-    ropsten: "0x100",
-    homestead: "0x80",
-    chainId: 103,
-    assetId: 1
-  },
-  {
-    label: "OKExChain",
-    value: "OKExChain",
-    symbol: "OKT",
-    ropsten: "0x41",
-    homestead: "0x42",
-    chainId: 104,
-    assetId: 1
-  }
-];
 
 export function createRPCParams(method: string): any {
   return {
@@ -289,14 +235,16 @@ export const _networkInfo = {
     chainId: isBeta ? 2 : 1,
     origin: NULSOrigin,
     color: "#00da9d",
-    mainAsset: "NULS"
+    mainAsset: "NULS",
+    logo: nulsLogo
   },
   NERVE: {
     name: "NERVE",
     chainId: isBeta ? 5 : 9,
     origin: NERVEOrigin,
     color: "#56bff3",
-    mainAsset: "NERVE"
+    mainAsset: "NERVE",
+    logo: nerveLogo
   },
   Ethereum: {
     name: "Ethereum",
@@ -466,4 +414,17 @@ export function formatFloat(num: string, digit: number) {
 export function floatToCeil(num: string, decimal = 6) {
   // @ts-ignore
   return Math.ceil(num * Math.pow(10, decimal)) / Math.pow(10, decimal);
+}
+
+export function isNULSOrNERVE(address: string | null) {
+  if (!address) return false;
+  const nulsReg = /^tNULS|NULS/;
+  const nerveReg = /^TNVT|NERVE/;
+  if (nulsReg.test(address)) {
+    return "NULS";
+  } else if (nerveReg.test(address)) {
+    return "NERVE";
+  } else {
+    return false;
+  }
 }

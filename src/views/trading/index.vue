@@ -33,7 +33,7 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { defineComponent, watch, ref } from "vue";
 import Overview from "./Overview.vue";
 import Swap from "./Swap.vue";
@@ -82,11 +82,11 @@ export default defineComponent({
     );
 
     function changeList() {
-      selectAsset(selectedAsset.from, selectedAsset.to);
+      selectAsset(selectedAsset?.from, selectedAsset?.to);
     }
 
     const swapRate = ref("");
-    function updateRate(rate) {
+    function updateRate(rate: string) {
       swapRate.value = rate;
     }
 

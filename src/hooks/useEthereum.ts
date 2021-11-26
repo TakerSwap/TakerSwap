@@ -7,6 +7,7 @@ import OKEx from "@/assets/img/okexchain.png";
 
 import { ethers } from "ethers";
 import nerve from "nerve-sdk-js";
+import storage from "@/utils/storage";
 
 interface State {
   address: string | null;
@@ -52,8 +53,13 @@ export const providerList = [
 
 export function getProvider(type?: string) {
   if (type) return window[type];
-  const providerType = localStorage.getItem("providerType");
+  const providerType = storage.get("local", "providerType");
   return providerType ? window[providerType] : null;
+}
+
+export function getAddress() {
+  const provider = getProvider();
+  return provider?.selectedAddress;
 }
 
 export default function useEthereum() {
@@ -111,14 +117,14 @@ export default function useEthereum() {
     await provider?.request({ method: "eth_requestAccounts" });
     state.address = provider?.selectedAddress;
     state.chainId = provider?.chainId;
-    localStorage.setItem("providerType", providerType);
+    storage.set("local", "providerType", providerType);
     listenAccountChange();
     listenNetworkChange();
     reload();
   }
 
   function disconnect() {
-    localStorage.removeItem("providerType");
+    storage.remove("local", "providerType");
     state.address = "";
     reload();
   }

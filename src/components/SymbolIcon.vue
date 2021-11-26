@@ -4,7 +4,7 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import { getIconSrc } from "@/api/util";
+import { getIconSrc } from "@/utils/util";
 import defaultIcon from "@/assets/img/defaultIcon.svg";
 export default defineComponent({
   props: {

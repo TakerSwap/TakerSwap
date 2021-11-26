@@ -23,11 +23,11 @@
           <el-tooltip effect="dark" :content="icon" placement="top">
             <span class="click">{{ icon }}</span>
           </el-tooltip>
-          <i class="el-icon-arrow-down"></i>
+          <el-icon><arrow-down /></el-icon>
         </template>
         <template v-else>
           <span class="placeholder">{{ $t("transfer.transfer12") }}</span>
-          <i class="el-icon-arrow-down"></i>
+          <el-icon><arrow-down /></el-icon>
         </template>
       </div>
     </div>
@@ -35,7 +35,7 @@
     <AssetsDialog
       v-model:showDialog="showDialog"
       :assetList="list"
-      :showBalance="takerAddress ? true : false"
+      :showBalance="!!takerAddress"
       :showAmount="showAmount"
       :selectedAsset="selectedAsset"
       @filterAsset="filter"
@@ -47,7 +47,7 @@
 <script>
 import SymbolIcon from "@/components/SymbolIcon.vue";
 import AssetsDialog from "@/components/AssetsDialog";
-import { superLong } from "@/api/util";
+import { superLong } from "@/utils/util";
 export default {
   props: {
     label: {
@@ -88,9 +88,6 @@ export default {
   watch: {
     inputVal(val) {
       this.amount = val;
-    },
-    searchVal(val) {
-      this.filter(val);
     },
     assetList: {
       immediate: true,
@@ -138,6 +135,7 @@ export default {
       }
     },
     filter(str) {
+      this.searchVal = str;
       if (!str) {
         this.list = this.allAssetsList.filter(v => v);
       } else {

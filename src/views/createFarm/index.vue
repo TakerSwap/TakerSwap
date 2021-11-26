@@ -6,7 +6,6 @@
       element-loading-background="rgba(24, 24, 55, 0.8)"
     >
       <div class="head">
-        <!--        <div class="back"><i class="el-icon-back" @click="back"></i></div>-->
         <h3>{{ $t("farm.farm12") }}</h3>
       </div>
       <el-form label-position="top" :model="model" :rules="rules" ref="form">
@@ -112,33 +111,24 @@
   </div>
 </template>
 
-<script>
-import {
-  defineComponent,
-  reactive,
-  toRefs,
-  ref,
-  onMounted,
-  computed,
-  watch
-} from "vue";
+<script lang="ts">
+import { defineComponent, reactive, ref, computed } from "vue";
 import nerve from "nerve-sdk-js";
-import { useRouter } from "vue-router";
-import { NTransfer } from "@/api/api";
+// @ts-ignore
+import { NTransfer } from "@/utils/api";
 import { useToast } from "vue-toastification";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
-import { getBlockInfo } from "@/model";
-import { divisionAndFix, _networkInfo, Minus, timesDecimals } from "@/api/util";
+import { getBlockInfo } from "@/service/api";
+import { Minus, timesDecimals, Division } from "@/utils/util";
 import config from "@/config";
 import dayjs from "dayjs";
-import AuthButton from "@/components/AuthButton";
-import useMyFarm from "./useMyFarm"
+import AuthButton from "@/components/AuthButton.vue";
+import useStoreState from "@/hooks/useStoreState";
+import useBroadcastNerveHex from "@/hooks/useBroadcastNerveHex";
+import useMyFarm from "./hooks/useMyFarm";
+import { ElForm } from "element-plus";
 
-function parseChainInfo(key) {
-  const arrry = key.split("-");
-  return arrry.map(v => Number(v));
-}
+import { AssetItem } from "@/store";
 
 export default defineComponent({
   name: "CreateFarm",
@@ -146,13 +136,10 @@ export default defineComponent({
     AuthButton
   },
   setup() {
-    const store = useStore();
-    const takerAddress = computed(() => {
-      return store.getters.takerAddress;
-    });
+    const { takerAddress, assetsList: assetList } = useStoreState();
     const { t } = useI18n();
     const toast = useToast();
-    const form = ref(null);
+    const form = ref<InstanceType<typeof ElForm>>();
     const loading = ref(false);
     const model = reactive({
       tokenA: "", // 质押的token
@@ -216,7 +203,7 @@ export default defineComponent({
       if (!tokenB) return 0;
       return tokenB.available;
     });
-    function validateSyrupPerDay(rule, value, callback) {
+    function validateSyrupPerDay(rule: any, value: any, callback: any) {
       // const reg = new RegExp("^([1-9][\\d]{0,20}|0)(\\.[\\d])?$");
       const reg = new RegExp("^([1-9][\\d]{0,1})$");
       if (!reg.exec(value)) {
@@ -225,7 +212,7 @@ export default defineComponent({
         callback();
       }
     }
-    function validateSyrupTotalAmount(rule, value, callback) {
+    function validateSyrupTotalAmount(rule: any, value: any, callback: any) {
       if (!model.tokenB) {
         const reg = new RegExp("^([1-9][\\d]*|0)(\\.[\\d]*)?$");
         if (!reg.exec(value)) {
@@ -234,13 +221,15 @@ export default defineComponent({
           callback();
         }
       } else {
-        const tokenB = assetList.value.find(v => v.assetKey === model.tokenB);
+        const tokenB = assetList.value.find(
+          (v: AssetItem) => v.assetKey === model.tokenB
+        ) as AssetItem;
         const { decimals, available } = tokenB;
         const reg = new RegExp(
           "^([1-9][\\d]{0,20}|0)(\\.[\\d]{0," + decimals + "})?$"
         );
         // console.log(available, value, available < value);
-        if (Minus(available, value) < 0) {
+        if (Minus(available, value).toNumber() < 0) {
           callback(t("createFarm.createFarm10"));
         } else if (!reg.exec(value)) {
           callback(t("createFarm.createFarm9") + decimals);
@@ -249,7 +238,7 @@ export default defineComponent({
         }
       }
     }
-    function validateCheck(rule, value, callback) {
+    function validateCheck(rule: any, value: any, callback: any) {
       if (!value) {
         callback(t("createFarm.createFarm7"));
       } else {
@@ -257,15 +246,14 @@ export default defineComponent({
       }
     }
 
-    function disableTime(date) {
+    function disableTime(date: Date) {
       // console.log(date, 132465)
       return new Date().getTime() > new Date(date).getTime();
     }
-    const assetList = computed(() => store.state.assetList);
 
     function submitForm() {
       console.log(model, 999);
-      form.value.validate(valid => {
+      form.value?.validate(valid => {
         if (valid) {
           createFarm();
         } else {
@@ -274,19 +262,24 @@ export default defineComponent({
         }
       });
     }
+    const { handleHex } = useBroadcastNerveHex();
     async function createFarm() {
       loading.value = true;
       try {
         const { lockedTime, syrupPerDay, syrupTotalAmount, startTime } = model;
-        const tokenA = assetList.value.find(v => v.assetKey === model.tokenA);
-        const tokenB = assetList.value.find(v => v.assetKey === model.tokenB);
-        const addressInfo = store.state.addressInfo;
+        const tokenA = assetList.value.find(
+          (v: AssetItem) => v.assetKey === model.tokenA
+        ) as AssetItem;
+        const tokenB = assetList.value.find(
+          (v: AssetItem) => v.assetKey === model.tokenB
+        ) as AssetItem;
+        const syrupPerDay_amount = Division(syrupPerDay, (24 * 60 * 60) / 2);
         const syrupPerBlock = timesDecimals(
-          syrupPerDay / ((24 * 60 * 60) / 2),
+          syrupPerDay_amount,
           tokenB.decimals
         ).split(".")[0];
         const remark = "";
-        const blockInfo = await getBlockInfo();
+        const blockInfo: any = await getBlockInfo();
         const currentHeight = blockInfo.blockHeight;
         const diffSeconds = dayjs(startTime).diff(dayjs(new Date()), "seconds");
         const startBlockHeight = advanced.value
@@ -305,17 +298,7 @@ export default defineComponent({
           config.prefix,
           remark
         );
-        const tAssemble = nerve.deserializationTx(tx.hex);
-
-        const transfer = new NTransfer({ chain: "NERVE" });
-
-        const txHex = await transfer.getTxHex({
-          tAssemble,
-          pub: addressInfo.pub,
-          signAddress: addressInfo.address.Ethereum
-        });
-        // console.log(txHex, 666);
-        const result = await transfer.broadcastHex(txHex);
+        const result: any = await handleHex(tx.hex);
         if (result && result.hash) {
           toast.success(t("transfer.transfer14"));
           updateMyFarms({
@@ -323,6 +306,7 @@ export default defineComponent({
             hash: result.hash,
             name: tokenA.symbol
           });
+          form.value?.resetFields();
           back();
         } else {
           toast.error("Create farm failed");
@@ -333,7 +317,6 @@ export default defineComponent({
       }
       loading.value = false;
     }
-    const router = useRouter();
     function back() {
       // router.go(-1);
     }

@@ -14,16 +14,18 @@
       element-loading-background="rgba(24, 24, 55, 0.8)"
     >
       <div class="titles">
-        {{ addOrMinus === "add" ? $t("farm.farm20") : $t("farm.farm10") }}LP
+        {{ addOrMinus === LpDialogType.Add ? $t("farm.farm20") : $t("farm.farm10") }}LP
       </div>
       <div class="infos">
         <div class="in flex-between">
           <span>
-            {{ addOrMinus === "add" ? $t("farm.farm20") : $t("farm.farm10") }}LP
+            {{ addOrMinus === LpDialogType.Add ? $t("farm.farm20") : $t("farm.farm10") }}LP
           </span>
           <label>
             {{ $t("public.public16") }}
-            <span class="el-icon-loading" v-if="!balance"></span>
+            <el-icon class="is-loading" v-if="!balance">
+              <loading />
+            </el-icon>
             <span v-else>{{ balance }}</span>
           </label>
         </div>
@@ -32,7 +34,7 @@
           <el-input class="no-border" placeholder="0.0" v-model="numberValue">
             <template #append><span @click="clickMax">Max</span></template>
           </el-input>
-          <span class="fr lp">{{ lpName }}</span>
+          <span class="fr lp" v-if="lpName">{{ lpName }}</span>
         </div>
         <span class="error-tip" v-if="amountErrorTip">
           {{ amountErrorTip }}
@@ -54,20 +56,27 @@
   </el-dialog>
 </template>
 
-<script>
-import { defineComponent, ref, watch, computed } from "vue";
-import { Minus } from "@/api/util";
+<script lang="ts">
+import { defineComponent, ref, watch, computed, PropType } from "vue";
+import { Minus } from "@/utils/util";
 import { useI18n } from "vue-i18n";
+import { LpDialogType } from "@/views/farm/types";
+
 export default defineComponent({
   props: {
     showLPDialog: Boolean,
-    balance: [String, Number],
+    balance: {
+      type: String,
+      default: ""
+    },
     loading: Boolean,
-    addOrMinus: String,
+    addOrMinus: {
+      type: String as PropType<LpDialogType>
+    },
     lpName: String,
     decimal: [String, Number]
   },
-  emits: ["confirm"],
+  emits: ["confirm", "update:showLPDialog"],
   setup(props, { emit }) {
     const { t } = useI18n();
     const show = ref(false);
@@ -89,7 +98,7 @@ export default defineComponent({
       val => {
         if (val) {
           let decimals = props.decimal || 0;
-          let patrn = "";
+          let patrn: RegExp;
           if (!decimals) {
             patrn = new RegExp("^([1-9][\\d]*|0)(\\.[\\d]*)?$|(^\\.[\\d]*$)");
             // patrn = new RegExp("^([1-9][\\d]{0,20}|0)(\\.[\\d])?$");
@@ -107,7 +116,7 @@ export default defineComponent({
           }
           if (!patrn.exec(val)) {
             amountErrorTip.value = t("transfer.transfer17") + decimals;
-          } else if (!Number(props.balance) || Minus(props.balance, val) < 0) {
+          } else if (!Number(props.balance) || Minus(props.balance, val).toNumber() < 0) {
             amountErrorTip.value = t("transfer.transfer15");
           } else {
             amountErrorTip.value = "";
@@ -136,7 +145,8 @@ export default defineComponent({
       disableTx,
       clickMax,
       closeAddOrMinus,
-      confirmAddOrMinus
+      confirmAddOrMinus,
+      LpDialogType
     };
   }
 });
@@ -224,6 +234,7 @@ export default defineComponent({
   .dialog-footer {
     display: block;
     padding: 40px 0 10px 0;
+    text-align: center;
     .el-button {
       width: 185px;
       height: 48px;

@@ -22,7 +22,8 @@ import useEthereum from "@/hooks/useEthereum";
 import { useI18n } from "vue-i18n";
 import config from "@/config";
 import { watch } from "vue";
-import { getCurrentAccount } from "@/api/util";
+import { getCurrentAccount } from "@/utils/util";
+import storage from "@/utils/storage";
 
 export default {
   props: {
@@ -67,8 +68,7 @@ export default {
           },
           NULSConfig
         );
-        const accountList =
-          JSON.parse(localStorage.getItem("accountList")) || [];
+        const accountList = storage.get("local", "accountList") || [];
         const existIndex = accountList.findIndex(v => v.pub === account.pub);
         // 原来存在就替换，找不到就push
         if (existIndex > -1) {
@@ -76,11 +76,11 @@ export default {
         } else {
           accountList.push(account);
         }
-        localStorage.setItem("accountList", JSON.stringify(accountList));
+        storage.set("local", "accountList", accountList);
         store.commit("setCurrentAddress", account);
         result = true;
       } catch (e) {
-        console.log(e, 4444)
+        // console.log(e, 4444)
         toast.error(t("login.login3"));
       }
       emit("loading", false);

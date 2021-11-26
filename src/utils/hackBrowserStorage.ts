@@ -4,7 +4,7 @@ import nerve from "nerve-sdk-js";
 
 // Talon改Taker浏览器缓存修改
 export function hackTalonToTaker() {
-  const accountList = storage.get("local", "accountList");
+  const accountList = storage.get("local", "accountList") || [];
   const needFix = accountList.find((account: any) => {
     return account.address.Talon || !account.address.NULS;
   });

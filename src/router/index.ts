@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import { getProvider } from "@/hooks/useEthereum";
-import { getCurrentAccount } from "@/api/util";
+import { getCurrentAccount } from "@/utils/util";
 // import Farm from "@/views/farm/index.vue";
 // import Pool from "@/views/pool/index.vue";
 
@@ -50,17 +50,17 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import("@/views/createFarm/index.vue"),
     meta: { requireAuth: true }
   },
-  {
+  /*{
     path: "/info",
     name: "info",
     component: () => import("@/views/info/Info.vue"),
     meta: { requireAuth: true }
-  },
-  {
+  },*/
+  /*{
     path: "/login",
     name: "login",
     component: () => import("@/views/login/index.vue")
-  }
+  }*/
 ];
 
 const router = createRouter({

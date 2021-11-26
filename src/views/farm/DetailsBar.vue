@@ -2,8 +2,13 @@
   <div class="farm-details">
     <div class="pc-cont">
       <div class="getLp">
-        <p class="click" @click="toAddLiquidity" v-if="isTaker&&tokenInfo.name">
-          {{ $t("farm.farm7") + " " + tokenInfo.name }}{{ !isPool ? " LP" : "" }}
+        <p
+          class="click"
+          @click="toAddLiquidity"
+          v-if="isTaker && tokenInfo.name"
+        >
+          {{ $t("farm.farm7") + " " + tokenInfo.name }}
+          {{ !isPool ? " LP" : "" }}
           <i class=""></i>
         </p>
         <!--        <p class="click">
@@ -23,7 +28,7 @@
               </template>
               <p class="ellipsis">{{ $thousands(tokenInfo.pendingReward) }}</p>
             </el-tooltip>
-<!--            <p class="ellipsis">{{ $thousands(tokenInfo.pendingReward) }}</p>-->
+            <!--            <p class="ellipsis">{{ $thousands(tokenInfo.pendingReward) }}</p>-->
             <span>≈${{ $thousands(tokenInfo.pendingRewardUSD) }}</span>
           </div>
           <div class="right">
@@ -47,7 +52,7 @@
               </template>
               <p class="ellipsis">{{ $thousands(tokenInfo.stakeAmount) }}</p>
             </el-tooltip>
-<!--            <p class="ellipsis">{{ $thousands(tokenInfo.stakeAmount) }}</p>-->
+            <!--            <p class="ellipsis">{{ $thousands(tokenInfo.stakeAmount) }}</p>-->
             <span>≈${{ $thousands(tokenInfo.stakeUSD) }}</span>
           </div>
           <div class="right">
@@ -66,25 +71,27 @@
                 class="btns"
                 type="primary"
                 size="small"
-                icon="el-icon-minus"
                 :disabled="
                   !Number(tokenInfo.stakeAmount) ||
                   !Number(tokenInfo.pendingReward) ||
                   !takerAddress ||
                   (!tokenInfo.isLocked && isTaker)
                 "
-                @click="handleLP('minus')"
-              ></el-button>
+                @click="handleLP(LpDialogType.Minus)"
+              >
+                <el-icon><minus /></el-icon>
+              </el-button>
               <el-button
                 class="btns"
                 type="primary"
                 size="small"
-                icon="el-icon-plus"
                 :disabled="
                   !!!Number(tokenInfo.syrupTokenBalance) || !takerAddress
                 "
-                @click="handleLP('add')"
-              ></el-button>
+                @click="handleLP(LpDialogType.Add)"
+              >
+                <el-icon><plus /></el-icon>
+              </el-button>
             </template>
           </div>
         </div>
@@ -132,25 +139,27 @@
                 class="btns"
                 type="primary"
                 size="small"
-                icon="el-icon-minus"
                 :disabled="
                   !Number(tokenInfo.stakeAmount) ||
                   !Number(tokenInfo.pendingReward) ||
                   !takerAddress ||
                   (!tokenInfo.isLocked && isTaker)
                 "
-                @click="handleLP('minus')"
-              ></el-button>
+                @click="handleLP(LpDialogType.Minus)"
+              >
+                <el-icon><minus /></el-icon>
+              </el-button>
               <el-button
                 class="btns"
                 type="primary"
                 size="small"
-                icon="el-icon-plus"
                 :disabled="
                   !!!Number(tokenInfo.syrupTokenBalance) || !takerAddress
                 "
-                @click="handleLP('add')"
-              ></el-button>
+                @click="handleLP(LpDialogType.Add)"
+              >
+                <el-icon><plus /></el-icon>
+              </el-button>
             </template>
           </div>
         </div>
@@ -168,7 +177,8 @@
       <div class="d-flex align-items-center space-between mt-8 size-14">
         <span class="text-7e">{{ $t("farm.farm5") }}</span>
         <span>
-          {{ $thousands(tokenInfo.syrupTokenBalance) }} {{ tokenInfo.syrupTokenSymbol }}
+          {{ $thousands(tokenInfo.syrupTokenBalance) }}
+          {{ tokenInfo.syrupTokenSymbol }}
         </span>
       </div>
       <div
@@ -192,22 +202,25 @@
   </div>
 </template>
 
-<script>
-import { computed, defineComponent, onMounted, ref } from "vue";
-import config from "@/config";
-import nerve from "nerve-sdk-js";
+<script lang="ts">
+import { defineComponent, onMounted, ref, PropType } from "vue";
 import { useToast } from "vue-toastification";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
-import { ETransfer, NTransfer } from "@/api/api";
-import { timesDecimals, divisionDecimals, isBeta } from "@/api/util";
-// import { contractAddress, txAbi } from "@/hooks/farm/contractConfig";
-import { txAbi } from "@/hooks/farm/contractConfig";
-import useContractAddress from "@/hooks/farm/useContractAddress";
+import LpDialog from "@/components/LpDialog.vue";
+import { txAbi } from "@/contractConfig/contractConfig";
+import useContractAddress from "@/views/farm/hooks/useContractAddress";
+import useStoreState from "@/hooks/useStoreState";
+import useBroadcastNerveHex from "@/hooks/useBroadcastNerveHex";
 import { ethers } from "ethers";
-import { getAssetBalance } from "@/model";
-import LpDialog from "@/components/LpDialog";
+import { getAssetBalance } from "@/service/api";
+import nerve from "nerve-sdk-js";
+// @ts-ignore
+import { ETransfer } from "@/utils/api";
+import { timesDecimals, divisionDecimals, isBeta } from "@/utils/util";
+import config from "@/config";
+
+import { UniFarmItem, TakerFarmItem, LpOperate, LpDialogType } from "./types";
 
 export default defineComponent({
   name: "details-bar",
@@ -216,7 +229,7 @@ export default defineComponent({
   },
   props: {
     tokenInfo: {
-      type: Object,
+      type: Object as PropType<TakerFarmItem | UniFarmItem>,
       default: () => {}
     },
     showId: {
@@ -227,33 +240,21 @@ export default defineComponent({
     takerAddress: String,
     isPool: Boolean
   },
-  watch: {
-    isPool: {
-      immediate: true,
-      handler(val) {
-        console.log(val, 9666666666666)
-
-      }
-    }
-  },
   emits: ["loading"],
   setup(props, { emit }) {
     const router = useRouter();
     const route = useRoute();
-    const store = useStore();
     const { t } = useI18n();
     const toast = useToast();
     const dialogAddOrMinus = ref(false);
-    const addOrMinus = ref("add");
+    const addOrMinus = ref<LpDialogType>(LpDialogType.Add);
     const loading = ref(false);
     const needAuth = ref(true);
     const refreshAuth = ref(false);
-    const addressInfo = computed(() => {
-      return store.state.addressInfo;
-    });
-    const balance = ref(0);
+    const { addressInfo } = useStoreState();
+    const balance = ref("0");
     const contractAddress = useContractAddress().value;
-    onMounted(async () => {
+    onMounted(() => {
       // console.log(props.tokenInfo, 9696);
       getERC20Allowance();
     });
@@ -262,8 +263,9 @@ export default defineComponent({
         needAuth.value = false;
       } else {
         const transfer = new ETransfer();
+        const tokenInfo = props.tokenInfo as UniFarmItem;
         needAuth.value = await transfer.getERC20Allowance(
-          props.tokenInfo.lpToken,
+          tokenInfo.lpToken,
           contractAddress,
           addressInfo.value?.address?.Ethereum
         );
@@ -283,8 +285,9 @@ export default defineComponent({
       emit("loading", true);
       try {
         const transfer = new ETransfer();
+        const tokenInfo = props.tokenInfo as UniFarmItem;
         const res = await transfer.approveERC20(
-          props.tokenInfo.lpToken,
+          tokenInfo.lpToken,
           contractAddress,
           addressInfo.value?.address?.Ethereum
         );
@@ -301,49 +304,51 @@ export default defineComponent({
       emit("loading", false);
     }
 
+    // claim
     async function gether() {
       emit("loading", true);
       if (props.isTaker) {
-        await farmStake(0);
+        await farmStake("0");
       } else {
-        await LPOperation(2, 0);
+        await LPOperation(LpOperate.Claim, "0");
       }
       emit("loading", false);
     }
 
     // 收取收益(number = 0) / 增加LP
-    async function farmStake(number) {
+    async function farmStake(number: string) {
       try {
+        const tokenInfo = props.tokenInfo as TakerFarmItem;
         const { stakeTokenChainId, stakeTokenAssetId, stakeTokenDecimals } =
-          props.tokenInfo;
+          tokenInfo;
         const farmHash = props.tokenInfo.farmHash || route.params?.hash;
-        const ammount = timesDecimals(number, stakeTokenDecimals);
+        const amount = timesDecimals(number, stakeTokenDecimals);
         const tx = await nerve.swap.farmStake(
           addressInfo.value?.address?.Taker,
           nerve.swap.token(stakeTokenChainId, stakeTokenAssetId),
           config.chainId,
           config.prefix,
-          ammount,
+          amount,
           farmHash,
           ""
         );
         await handleHex(tx.hex);
       } catch (e) {
-        console.log(e, "gain-profit-error");
+        // console.log(e, "gain-profit-error");
         toast.error(e.message || e);
       }
     }
 
     // 添加/退出lp弹窗
-    async function handleLP(type) {
+    async function handleLP(type: string) {
       console.log(type, 9966333, props.tokenInfo);
-      if (type === "add") {
+      if (type === LpDialogType.Add) {
         dialogAddOrMinus.value = true;
-        addOrMinus.value = "add";
+        addOrMinus.value = LpDialogType.Add;
         getBalance();
       } else {
         dialogAddOrMinus.value = true;
-        addOrMinus.value = "minus";
+        addOrMinus.value = LpDialogType.Minus;
         balance.value = props.tokenInfo.stakeAmount;
       }
     }
@@ -351,9 +356,10 @@ export default defineComponent({
     async function getBalance() {
       balance.value = "";
       if (props.isTaker) {
+        const tokenInfo = props.tokenInfo as TakerFarmItem;
         const { stakeTokenChainId, stakeTokenAssetId, stakeTokenDecimals } =
-          props.tokenInfo;
-        const res = await getAssetBalance(
+          tokenInfo;
+        const res: any = await getAssetBalance(
           stakeTokenChainId,
           stakeTokenAssetId,
           addressInfo.value?.address?.Taker
@@ -361,10 +367,11 @@ export default defineComponent({
         balance.value = divisionDecimals(res.balance, stakeTokenDecimals);
       } else {
         const transfer = new ETransfer();
-        const contractAddress = props.tokenInfo.lpToken;
+        const tokenInfo = props.tokenInfo as UniFarmItem;
+        const contractAddress = tokenInfo.lpToken;
         const address = addressInfo.value?.address?.Ethereum;
         if (contractAddress) {
-          const decimal = props.tokenInfo.stakeTokenDecimals;
+          const decimal = tokenInfo.stakeTokenDecimals;
           balance.value = await transfer.getERC20Balance(
             contractAddress,
             Number(decimal),
@@ -377,13 +384,13 @@ export default defineComponent({
     }
 
     // 添加 / 退出farm
-    async function confirmAddOrMinus(amount) {
-      if (addOrMinus.value === "add") {
+    async function confirmAddOrMinus(amount: string) {
+      if (addOrMinus.value === LpDialogType.Add) {
         loading.value = true;
         if (props.isTaker) {
           await farmStake(amount);
         } else {
-          await LPOperation(0, amount);
+          await LPOperation(LpOperate.Add, amount);
         }
         loading.value = false;
       } else {
@@ -392,40 +399,41 @@ export default defineComponent({
         if (props.isTaker) {
           await farmWithdrawal(amount);
         } else {
-          await LPOperation(1, amount);
+          await LPOperation(LpOperate.Remove, amount);
         }
         loading.value = false;
       }
     }
 
     // 退出质押
-    async function farmWithdrawal(number) {
+    async function farmWithdrawal(number: string) {
+      const tokenInfo = props.tokenInfo as TakerFarmItem;
       try {
         const {
           stakeTokenChainId,
           stakeTokenAssetId,
           stakeTokenDecimals,
           farmHash
-        } = props.tokenInfo;
-        const ammount = timesDecimals(number, stakeTokenDecimals);
+        } = tokenInfo;
+        const amount = timesDecimals(number, stakeTokenDecimals);
         const tx = await nerve.swap.farmWithdraw(
           addressInfo.value?.address?.Taker,
           nerve.swap.token(stakeTokenChainId, stakeTokenAssetId),
           // config.chainId,
           // config.prefix,
-          ammount,
+          amount,
           farmHash,
           ""
         );
         await handleHex(tx.hex);
       } catch (e) {
-        console.log(e, "gain-profit-error");
+        // console.log(e, "gain-profit-error");
         toast.error(e.message || e);
       }
     }
 
-    // 添加 - 0、减少 - 1 lp, 领取收益 -2
-    async function LPOperation(type, value) {
+    // 添加 - Add、减少 - Remove lp, 领取收益 -Claim
+    async function LPOperation(type: string, value: string) {
       try {
         const transfer = new ETransfer();
         const { stakeTokenDecimals } = props.tokenInfo;
@@ -435,10 +443,10 @@ export default defineComponent({
         const amount = timesDecimals(value, stakeTokenDecimals);
         // console.log(amount, 9595);
         const pid = props.tokenInfo.farmHash;
-        if (type === 0) {
+        if (type === LpOperate.Add) {
           // console.log(props.tokenInfo.farmHash, 999888)
           res = await contracts.deposit(pid, amount);
-        } else if (type === 1) {
+        } else if (type === LpOperate.Remove) {
           res = await contracts.withdraw(pid, amount);
         } else {
           res = await contracts.deposit(pid, amount);
@@ -450,22 +458,15 @@ export default defineComponent({
           toast.error(res.message || res);
         }
       } catch (e) {
+        // console.error(e, 6666)
         toast.error(e.message || e);
       }
     }
 
+    const { handleHex: handleNerveHex } = useBroadcastNerveHex();
     // taker 签名hash&广播hex
-    async function handleHex(hex) {
-      const tAssemble = nerve.deserializationTx(hex);
-
-      const transfer = new NTransfer({ chain: "NERVE" });
-      const txHex = await transfer.getTxHex({
-        tAssemble,
-        pub: addressInfo.value?.pub,
-        signAddress: addressInfo.value?.address?.Ethereum
-      });
-      console.log(txHex, 666);
-      const result = await transfer.broadcastHex(txHex);
+    async function handleHex(hex: string) {
+      const result: any = await handleNerveHex(hex);
       if (result && result.hash) {
         dialogAddOrMinus.value = false;
         toast.success(t("transfer.transfer14"));
@@ -482,10 +483,10 @@ export default defineComponent({
         lpPairAssetBChainId,
         stakeTokenChainId,
         stakeTokenAssetId
-      } = props.tokenInfo;
+      } = props.tokenInfo as TakerFarmItem;
       let url;
       if (!props.isPool) {
-        url = `/liquidity/${lpPairAssetAChainId}-${lpPairAssetAAssetId}/${lpPairAssetBChainId}-${lpPairAssetBAssetId}`
+        url = `/liquidity/${lpPairAssetAChainId}-${lpPairAssetAAssetId}/${lpPairAssetBChainId}-${lpPairAssetBAssetId}`;
       } else {
         const USDT = isBeta ? "5-7" : "9-3";
         url = `/trading/${USDT}/${stakeTokenChainId}-${stakeTokenAssetId}`;
@@ -502,7 +503,8 @@ export default defineComponent({
       gether,
       handleLP,
       confirmAddOrMinus,
-      toAddLiquidity
+      toAddLiquidity,
+      LpDialogType
     };
   }
 });
@@ -539,7 +541,7 @@ export default defineComponent({
       border-radius: 10px;
       &.btn_disabled {
         opacity: 0.2;
-        background-color: $btnColor!important;
+        background-color: $btnColor !important;
       }
     }
   }
@@ -549,7 +551,7 @@ export default defineComponent({
 }
 .farm-details {
   /* height: 148px; */
-  background-color: #21214D;
+  background-color: #21214d;
   .pc-cont {
     padding: 20px 40px 20px 30px;
     //border-bottom: 1px solid #e4efff;
@@ -561,7 +563,7 @@ export default defineComponent({
       p {
         font-size: 16px;
         font-weight: 500;
-        color: #FCFCFC;
+        color: #fcfcfc;
         line-height: 24px;
         margin-top: 8px;
         //cursor: not-allowed;
@@ -657,7 +659,8 @@ export default defineComponent({
   }
 }
 @media screen and (max-width: 1100px) {
-  .farm-details .pc-cont .biaoge .gain .left, .farm-details .pc-cont .biaoge .alter .left {
+  .farm-details .pc-cont .biaoge .gain .left,
+  .farm-details .pc-cont .biaoge .alter .left {
     max-width: 170px;
   }
 }

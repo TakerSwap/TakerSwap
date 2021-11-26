@@ -5,13 +5,12 @@ import { useStore } from "@/store";
 export default function useLang() {
   const store = useStore();
   const { locale } = useI18n();
+  // 切换的语言
   const lang = computed(() => {
     return locale.value === "en" ? "CN" : "EN";
   });
-  store.commit("switchLang", locale.value);
   function switchLang() {
     locale.value = lang.value === "EN" ? "en" : "zh-cn";
-    localStorage.setItem("lang", locale.value);
     store.commit("switchLang", locale.value);
   }
   return {

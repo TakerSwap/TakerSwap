@@ -14,6 +14,7 @@
 <script lang="ts">
 import { defineComponent, computed } from "vue";
 import SymbolIcon from "@/components/SymbolIcon.vue";
+
 export default defineComponent({
   props: {
     name: String

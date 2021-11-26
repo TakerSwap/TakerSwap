@@ -1,8 +1,10 @@
 import { createStore, useStore as useVuexStore } from "vuex";
-import { _networkInfo } from "@/api/util";
+import { _networkInfo, isNULSOrNERVE } from "@/utils/util";
+import storage from "@/utils/storage";
+import { getAddress } from "@/hooks/useEthereum";
 import config from "@/config";
 // @ts-ignore
-import { getAssetList } from "@/model";
+import { getAssetList } from "@/service/api";
 
 // InjectionKey 将store安装到Vue应用程序时提供类型,将类型传递InjectionKey给useStore方法
 export interface AssetItem {
@@ -28,38 +30,38 @@ export interface State {
   assetList: AssetItem[] | [];
 }
 
-let sessionList = [];
-try {
-  sessionList = JSON.parse(<string>sessionStorage.getItem("assetList")) || [];
-} catch (e) {
-  sessionStorage.removeItem("assetList");
-}
-
 export default createStore<State>({
   state: {
     // hasTakerAddress: false,
     addressInfo: {},
     chainId: "",
     showConnect: false,
-    lang: localStorage.getItem("lang"),
+    lang: storage.get("local", "lang"),
     destroyAddress: config["destroyAddress"],
     feeAddress: config["destroyAddress"],
-    assetList: sessionList
+    assetList: storage.get("session", "assetList") || []
   },
   getters: {
     // 异构链名称Ethereum..
     chain(state) {
       const chainId = state.chainId;
-      if (!chainId) return "";
+      const L1Address = getAddress();
+      const NULSOrNERVE = isNULSOrNERVE(L1Address);
+      // console.log(L1Address, NULSOrNERVE, 333)
+      if (!chainId && !NULSOrNERVE) return "";
       let chain = "";
-      Object.keys(_networkInfo).map(v => {
-        if (_networkInfo[v][config.ETHNET] === chainId) {
-          chain = _networkInfo[v].name;
-        }
-      });
+      if (NULSOrNERVE) {
+        chain = NULSOrNERVE;
+      } else {
+        Object.keys(_networkInfo).map(v => {
+          if (_networkInfo[v][config.ETHNET] === chainId) {
+            chain = _networkInfo[v].name;
+          }
+        });
+      }
       return chain;
     },
-    // metamask 网络错误
+    // metamask L1网络错误
     wrongChain(state) {
       const chainId = state.chainId;
       return Object.keys(_networkInfo).every(v => {
@@ -88,11 +90,11 @@ export default createStore<State>({
     },
     switchLang(state, data) {
       state.lang = data;
-      localStorage.setItem("lang", data);
+      storage.set("local", "lang", data);
     },
     setAssetList(state, list) {
       state.assetList = list;
-      sessionStorage.setItem("assetList", JSON.stringify(list));
+      storage.set("session", "assetList", list);
     }
   },
   actions: {

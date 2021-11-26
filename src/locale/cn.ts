@@ -119,7 +119,8 @@ const cn = {
     liquidity12: "创建流动性",
     liquidity13: "创建交易对",
     liquidity14: "创建交易对成功, 请添加流动性",
-    liquidity15: "你将收到"
+    liquidity15: "你将收到",
+    liquidity16: "超过提供的流动性"
   },
   login: {
     login1: "请先生成L2地址",

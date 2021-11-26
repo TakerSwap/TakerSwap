@@ -1,16 +1,23 @@
 import { ref, onMounted } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import storage from "@/utils/storage";
+import useStoreState from "@/hooks/useStoreState";
+
+interface Farm {
+  type: "farm" | "pool";
+  hash: string;
+  name: string;
+}
 
 export default function useMyFarm() {
-  const store = useStore();
   const router = useRouter();
   const myFarms = ref([]);
-  const currentAccount = store.state.addressInfo;
+  const { addressInfo: currentAccount } = useStoreState();
   onMounted(() => {
-    myFarms.value = currentAccount.farms || [];
+    myFarms.value = currentAccount.value.farms || [];
+    console.log(currentAccount, 666)
   });
-  function toMyFarm(farm) {
+  function toMyFarm(farm: Farm) {
     let url;
     if (farm.type === "farm") {
       url = `/farm/${farm.hash}`;
@@ -20,11 +27,10 @@ export default function useMyFarm() {
     router.push(url);
   }
 
-  function updateMyFarms(farm) {
-    const accountList =
-      JSON.parse(localStorage.getItem("accountList") || "") || [];
-    accountList.map(v => {
-      if (v.pub === currentAccount.pub) {
+  function updateMyFarms(farm: Farm) {
+    const accountList = storage.get("local", "accountList") || [];
+    accountList.map((v: any) => {
+      if (v.pub === currentAccount.value.pub) {
         if (v.farms && v.farms.length) {
           v.farms.push(farm);
         } else {
@@ -33,7 +39,7 @@ export default function useMyFarm() {
         myFarms.value = v.farms;
       }
     });
-    localStorage.setItem("accountList", JSON.stringify(accountList));
+    storage.set("local", "accountList", accountList);
   }
 
   return {

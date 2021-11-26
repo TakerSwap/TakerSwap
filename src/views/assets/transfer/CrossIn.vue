@@ -50,8 +50,8 @@
 <script>
 import { defineComponent } from "vue";
 import CustomInput from "@/components/CustomInput.vue";
-import { superLong, _networkInfo, Minus } from "@/api/util";
-import { ETransfer } from "@/api/api";
+import { superLong, _networkInfo, Minus } from "@/utils/util";
+import { ETransfer } from "@/utils/api";
 export default defineComponent({
   name: "crossIn",
   components: {

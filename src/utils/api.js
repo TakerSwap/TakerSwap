@@ -9,8 +9,8 @@ import BufferReader from "nerve-sdk-js/lib/utils/bufferreader";
 import txs from "nerve-sdk-js/lib/model/txs";
 import config from "@/config";
 import { getProvider } from "@/hooks/useEthereum";
-import { listen, unListen } from "@/api/promiseSocket";
-import { broadcastHex } from "@/model";
+import { listen, unListen } from "@/service/socket/promiseSocket";
+import { broadcastHex } from "@/service/api";
 
 const url = config.WS_URL;
 

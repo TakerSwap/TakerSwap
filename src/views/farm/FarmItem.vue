@@ -7,12 +7,14 @@
     <el-empty description="No Data" v-if="!list.length" />
     <template v-if="true">
       <div class="lis" v-for="(item, index) of list" :key="index">
-        <div class="title">
+        <div class="title" @click="showId(item.farmHash)">
           <farm-symbol :name="item.name"></farm-symbol>
           <ul>
             <li class="fl">
               <p>{{ $t("farm.farm2") }}</p>
-              <h2>{{ $thousands(item.pendingReward) }} {{ item.syrupTokenSymbol }}</h2>
+              <h2>
+                {{ $thousands(item.pendingReward) }} {{ item.syrupTokenSymbol }}
+              </h2>
             </li>
             <li class="fl">
               <p>{{ $t("farm.farm3") }}</p>
@@ -20,18 +22,27 @@
             </li>
             <li class="fl">
               <p>{{ $t("farm.farm4") }}</p>
-              <h2>{{ Number(item.tatalStakeTokenUSD) ? "$" + $thousands(item.tatalStakeTokenUSD) : "--" }}</h2>
+              <h2>
+                {{
+                  Number(item.tatalStakeTokenUSD)
+                    ? "$" + $thousands(item.tatalStakeTokenUSD)
+                    : "--"
+                }}
+              </h2>
             </li>
             <li class="fl">
               <p>{{ $t("farm.farm5") }}</p>
-              <h2>{{ $thousands(item.syrupTokenBalance) }} {{ item.syrupTokenSymbol }}</h2>
+              <h2>
+                {{ $thousands(item.syrupTokenBalance) }}
+                {{ item.syrupTokenSymbol }}
+              </h2>
             </li>
           </ul>
-          <div class="link view" @click="showId(item.farmHash)">
+          <div class="link view">
 <!--            {{ $t("farm.farm6") }}-->
-            <i
-              :class="{ 'el-icon-arrow-right': true, expand: item.showDetail }"
-            ></i>
+            <el-icon :class="{ expand: item.showDetail }">
+              <arrow-right />
+            </el-icon>
           </div>
         </div>
         <collapse-transition>
@@ -53,7 +64,7 @@
   <div class="mobile-cont">
     <el-empty description="No Data" v-if="!list.length"></el-empty>
     <div v-for="(item, index) in list" v-else :key="item.farmHash">
-      <div class="farm-item_cont">
+      <div class="farm-item_cont" @click="showId(item.farmHash)">
         <div class="farm-item_list">
           <div class="symbol-cont">
             <farm-symbol :name="item.name"></farm-symbol>
@@ -73,7 +84,7 @@
             </div>
           </div>
         </div>
-        <div class="farm-option text-4a size-14" @click="showId(item.farmHash)">
+        <div class="farm-option text-4a size-14">
           {{ $t("farm.farm6") }}
         </div>
       </div>
@@ -91,40 +102,43 @@
   </div>
 </template>
 
-<script>
-import { defineComponent, reactive, toRefs, computed } from "vue";
+<script lang="ts">
+import { defineComponent, PropType } from "vue";
 import DetailsBar from "./DetailsBar.vue";
 import CollapseTransition from "@/components/CollapseTransition.vue";
 import FarmSymbol from "./FarmSymbol.vue";
 import { useRouter } from "vue-router";
-import { useStore } from "vuex";
+import useStoreState from "@/hooks/useStoreState";
+import { TakerFarmItem, UniFarmItem } from "./types";
 
 export default defineComponent({
   name: "FarmItem",
   props: {
     loading: Boolean,
-    list: Array,
+    list: {
+      type: Array as PropType<TakerFarmItem[] | UniFarmItem[]>,
+      default: () => []
+    },
     isTaker: Boolean,
     isPool: Boolean
+  },
+  components: {
+    DetailsBar,
+    CollapseTransition,
+    FarmSymbol
   },
   emits: ["handleLoading"],
   setup(props, { emit }) {
     const router = useRouter();
-    const store = useStore();
-    const state = reactive({
-      contractAddress: "0x0faee22173db311f4c57c81ec6867e5deef6c218" //合约地址
-    });
 
-    const takerAddress = computed(() => {
-      return store.getters.takerAddress;
-    });
+    const { takerAddress } = useStoreState();
 
     async function createFarm() {
       router.push("/create-farm");
     }
 
     //详情
-    function showId(hash) {
+    function showId(hash: string) {
       for (let item of props.list) {
         if (item.farmHash === hash) {
           item.showDetail = !item.showDetail;
@@ -133,25 +147,17 @@ export default defineComponent({
         }
       }
     }
-    function handleLoading(status) {
+    function handleLoading(status: boolean) {
       emit("handleLoading", status);
     }
 
     return {
-      ...toRefs(state),
       takerAddress,
       showId,
       handleLoading,
       createFarm
     };
-  },
-  components: {
-    DetailsBar,
-    CollapseTransition,
-    FarmSymbol
-  },
-  computed: {},
-  mounted() {}
+  }
 });
 </script>
 
@@ -169,6 +175,7 @@ export default defineComponent({
     border-bottom: 1px solid #202049;
     justify-content: space-between;
     align-items: center;
+    cursor: pointer;
     .farm-item_list {
       .symbol-cont {
         display: flex;
@@ -223,6 +230,7 @@ export default defineComponent({
       display: flex;
       align-items: center;
       padding: 0 30px;
+      cursor: pointer;
       .symbol {
         min-width: 200px;
         .names {

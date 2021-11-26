@@ -18,7 +18,7 @@
 
 <script lang="ts">
 import { defineComponent, computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { _networkInfo } from "@/api/util";
+import { _networkInfo } from "@/utils/util";
 import config from "@/config";
 import useEthereum, { AddChain } from "@/hooks/useEthereum";
 

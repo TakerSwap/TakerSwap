@@ -21,7 +21,7 @@
           <h3>{{ $t("liquidity.liquidity4") }}</h3>
           <div class="liquidity-list">
             <div v-for="(item, index) in liquidityList" :key="index">
-              <div :class="['list-item', item.showDetail ? 'hide-border' : '']">
+              <div :class="['list-item', item.showDetail ? 'hide-border' : '']" @click="toggleDetail(item)">
                 <div class="symbol">
                   <div class="symbol-cont">
                     <div class="img-wrap">
@@ -38,13 +38,10 @@
                   </div>
                   <div class="amount-cont">{{ item.amount }}</div>
                 </div>
-                <div class="view-detail" @click="toggleDetail(item)">
-                  <i
-                    :class="{
-                      'el-icon-arrow-right': true,
-                      expand: item.showDetail
-                    }"
-                  ></i>
+                <div class="view-detail">
+                  <el-icon :class="{ expand: item.showDetail }">
+                    <arrow-right />
+                  </el-icon>
                 </div>
               </div>
               <collapse-transition>
@@ -91,7 +88,7 @@ import DetailBar from "./DetailBar.vue";
 import SymbolIcon from "@/components/SymbolIcon.vue";
 import Pagination from "@/components/Pagination.vue";
 import { userLiquidityPage } from "@/service/api";
-import { divisionAndFix } from "@/api/util";
+import { divisionAndFix } from "@/utils/util";
 import useStoreState from "@/hooks/useStoreState";
 import useAsset from "@/views/trading/hooks/useAsset";
 
@@ -225,6 +222,8 @@ export default defineComponent({
         border-bottom: 1px solid #202049;
         display: flex;
         align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
         &.hide-border {
           border: none;
         }
@@ -265,7 +264,7 @@ export default defineComponent({
         text-align: center;
       }
       .view-detail {
-        flex: 2;
+        //flex: 2;
         color: $linkColor;
         text-align: right;
         cursor: pointer;

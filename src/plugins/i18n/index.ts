@@ -1,10 +1,11 @@
 import { App } from "vue";
 import { createI18n } from "vue-i18n";
+import storage from "@/utils/storage";
 // import {i18n as Ei18n} from "element-plus/lib/locale";
 import cn from "@/locale/cn";
 import en from "@/locale/en";
-import zhLocale from "element-plus/lib/locale/lang/zh-cn";
-import enLocale from "element-plus/lib/locale/lang/en";
+import zhLocale from "element-plus/es/locale/lang/zh-cn";
+import enLocale from "element-plus/es/locale/lang/en";
 
 const messages = {
   [zhLocale.name]: {
@@ -20,8 +21,7 @@ const messages = {
 };
 const navigatorLang = "en"; //window.navigator.language === "zh-CN" ? "zh-cn" : "en";
 const fallLang = enLocale.name;
-const lang = localStorage.getItem("lang") || navigatorLang;
-localStorage.setItem("lang", lang);
+const lang = storage.get("local", "lang") || navigatorLang;
 
 const i18n = createI18n({
   locale: lang, // 默认

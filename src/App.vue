@@ -3,7 +3,6 @@
     <Header v-model:collapseMenu="collapseMenu"></Header>
     <div class="flex">
       <left-nav v-model:collapseMenu="collapseMenu"></left-nav>
-      <!--      <left-nav :class="['mobile_nav', collapseMenu ? 'hide-nav' : '']" :collapseMenu="false" mobile></left-nav>-->
       <div
         id="inner_content"
         :class="['inner_content', collapseMenu ? 'expand' : '']"
@@ -19,23 +18,22 @@
   <div class="cover-bg"></div>
 </template>
 
-<script>
-import Header from "./components/Header.vue";
-import LeftNav from "@/components/LeftNav";
+<script lang="ts">
+import { watch, ref, computed } from "vue";
+import { useStore } from "vuex";
+import Header from "@/components/Header.vue";
+import LeftNav from "@/components/LeftNav.vue";
 import { ElConfigProvider } from "element-plus";
 import zhCn from "element-plus/lib/locale/lang/zh-cn";
 import enLocale from "element-plus/lib/locale/lang/en";
-
-import { watch, ref, computed } from "vue";
-import { useStore } from "vuex";
-import { getAssetList } from "@/model";
-
+import storage from "@/utils/storage";
 import nerve from "nerve-sdk-js";
 import config from "@/config";
 nerve.customnet(config.chainId, config.API_URL, config.timeout); // sdk设置测试网chainId
 
-const navigatorLang = window.navigator.language === "zh-CN" ? "zh-cn" : "en";
-const lang = localStorage.getItem("lang") || navigatorLang;
+// const navigatorLang = window.navigator.language === "zh-CN" ? "zh-cn" : "en";
+const navigatorLang = "en";
+const lang = storage.get("local", "lang") || navigatorLang;
 
 export default {
   name: "App",
@@ -46,20 +44,21 @@ export default {
   },
   setup() {
     const store = useStore();
-    const locale = ref("zh-cn");
+    const locale = ref(zhCn);
     locale.value = lang === "zh-cn" ? zhCn : enLocale;
-    watch(store.state.lang, val => {
-      locale.value = val === "zh-cn" ? zhCn : enLocale;
-    });
-    let timer;
+    watch(
+      () => store.state.lang,
+      val => {
+        locale.value = val === "zh-cn" ? zhCn : enLocale;
+      }
+    );
+    let timer: number;
     const takerAddress = computed(() => store.getters.takerAddress);
     watch(takerAddress, val => {
-      // console.log(val, 6666);
       if (val) {
         store.dispatch("getAssetList", val);
         if (timer) clearInterval(timer);
-        timer = setInterval(() => {
-          // getAssetList(val);
+        timer = window.setInterval(() => {
           store.dispatch("getAssetList", val);
         }, 5000);
       } else {

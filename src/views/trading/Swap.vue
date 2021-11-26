@@ -149,10 +149,9 @@
               <symbol-icon :icon="item"></symbol-icon>
               <span>{{ item }}</span>
             </div>
-            <span
-              class="el-icon-arrow-right"
-              v-if="index !== routesSymbol.length - 1"
-            ></span>
+            <el-icon class="icon-arrow-right" v-if="index !== routesSymbol.length - 1">
+              <arrow-right />
+            </el-icon>
           </div>
         </div>
       </div>
@@ -220,7 +219,7 @@ import {
   timesDecimals,
   tofix,
   formatFloat
-} from "@/api/util";
+} from "@/utils/util";
 import { useI18n } from "vue-i18n";
 import { getWholeTradeExactIn } from "@/service/api";
 import nerve from "nerve-sdk-js";
@@ -229,7 +228,7 @@ import config from "@/config";
 import useStoreState from "@/hooks/useStoreState";
 import useBroadcastNerveHex from "@/hooks/useBroadcastNerveHex";
 import { ComponentInternalInstance } from "@vue/runtime-core";
-import { AssetItem, DefaultAsset, SwapState, WholeTradeExactIn } from "./types";
+import { AssetItem, DefaultAsset, SwapState, SwapPairInfo } from "./types";
 
 export default defineComponent({
   name: "swap",
@@ -367,7 +366,7 @@ export default defineComponent({
             tokenInStr: fromAssetKey,
             tokenOutStr: toAssetKey,
             tokenInAmount: timesDecimals(tokenInAmount, tokenInDecimal)
-          })) as WholeTradeExactIn[];
+          })) as SwapPairInfo[];
           const pairsInfo = {};
           if (res.length) {
             for (let i = 0; i < res.length; i++) {
@@ -1163,9 +1162,10 @@ export default defineComponent({
         //font-weight: 600;
         color: $labelColor;
       }
-      .el-icon-arrow-right {
+      .icon-arrow-right {
         margin: 0 10px;
         font-size: 16px;
+        color: $labelColor;
       }
     }
   }
@@ -1239,7 +1239,7 @@ export default defineComponent({
     .swap-route {
       .route-item {
         margin-bottom: 10px;
-        .el-icon-arrow-right {
+        .icon-arrow-right {
           margin: 0 8px;
         }
       }

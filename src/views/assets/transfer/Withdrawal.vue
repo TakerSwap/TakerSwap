@@ -25,7 +25,9 @@
       ></custom-input>
       <div class="fee">
         {{ $t("public.public15") }}
-        <span class="el-icon-loading" v-if="!fee"></span>
+        <el-icon class="is-loading" v-if="!fee">
+          <loading />
+        </el-icon>
         <span v-else>{{ fee + " " + feeSymbol }}</span>
         <span
           class="link"
@@ -66,8 +68,8 @@ import {
   Times,
   Plus,
   floatToCeil
-} from "@/api/util";
-import { NTransfer, ETransfer, getSymbolUSD } from "@/api/api";
+} from "@/utils/util";
+import { NTransfer, ETransfer, getSymbolUSD } from "@/utils/api";
 import config from "@/config";
 export default defineComponent({
   name: "withdrawal",

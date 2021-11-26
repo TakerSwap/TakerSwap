@@ -4,8 +4,8 @@ import {
   divisionAndFix,
   Plus,
   Times
-} from "@/api/util";
-import { listen } from "@/api/promiseSocket";
+} from "@/utils/util";
+import { listen } from "@/service/socket/promiseSocket";
 import config from "@/config";
 import store from "@/store";
 
@@ -93,7 +93,11 @@ export async function getAssetPrice(chainId: number, assetId: number) {
  * @param assetId 资产assetId
  * @param address 账户nerve地址
  */
-export async function getAssetBalance(chainId: number, assetId: number, address: string) {
+export async function getAssetBalance(
+  chainId: number,
+  assetId: number,
+  address: string
+) {
   const channel = "getAccountBalance";
   const params = createRPCParams(channel);
   params.params = params.params.concat([

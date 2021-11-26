@@ -36,8 +36,8 @@
 <script>
 import { defineComponent } from "vue";
 import CustomInput from "@/components/CustomInput.vue";
-import { Minus, timesDecimals } from "@/api/util";
-import { NTransfer } from "@/api/api";
+import { Minus, timesDecimals } from "@/utils/util";
+import { NTransfer } from "@/utils/api";
 export default defineComponent({
   name: "commonTransfer",
   inject: ["father"],

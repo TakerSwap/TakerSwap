@@ -5,12 +5,12 @@ import nerve from "nerve-sdk-js";
 import config from "@/config";
 import { userTradeHistoryPage } from "@/service/api";
 import dayjs from "dayjs";
-import { divisionDecimals } from "@/api/util";
-import { SwapSymbol, OrderItem, Pager } from "../types";
+import { divisionDecimals } from "@/utils/util";
+import { SwapSymbol, OrderItem, Pager, DefaultAsset } from "../types";
 
 export default function useSelectAsset() {
   const { takerAddress } = useStoreState();
-  let selectedAsset = null;
+  let selectedAsset = null as DefaultAsset | null;
   const swapSymbol = ref<SwapSymbol>({} as SwapSymbol);
   const orderList = ref<OrderItem[]>([] as OrderItem[]);
   const pager = reactive<Pager>({

@@ -52,7 +52,7 @@
 
 <script>
 import { defineComponent, ref, watch, computed } from "vue";
-import { superLong } from "@/api/util";
+import { superLong } from "@/utils/util";
 import SymbolIcon from "@/components/SymbolIcon.vue";
 
 export default defineComponent({

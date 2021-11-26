@@ -1,122 +1,54 @@
-import { reactive, toRefs, computed, watch, onBeforeUnmount } from "vue";
-import { listen, unListen } from "@/api/promiseSocket";
-import * as subSocket from "@/api/websocket";
+import { reactive, toRefs, watch, onBeforeUnmount } from "vue";
+import * as subSocket from "@/service/socket/websocket";
 import config from "@/config";
 import {
-  genId,
   Division,
   divisionAndFix,
   divisionDecimals,
   Times,
-  Minus, fixNumber
-} from "@/api/util";
-import {
-  abi,
-  abiTwo,
-  abiThree
-} from "./contractConfig";
+  Minus,
+  fixNumber
+} from "@/utils/util";
 // @ts-ignore
-import { ETransfer } from "@/api/api";
+import { ETransfer } from "@/utils/api";
 import { ethers } from "ethers";
-// @ts-ignore
-import { uniAssetPrice } from "@/model";
-import { useStore } from "vuex";
-import useContractAddress from "./useContractAddress"
+import useContractAddress from "./useContractAddress";
+import { abi, abiTwo, abiThree } from "@/contractConfig/contractConfig";
+import { getTakerFarm, uniAssetPrice } from "@/service/api";
+import useStoreState from "@/hooks/useStoreState";
+import { TakerFarmItem, UserStakeFarm, FarmList, UniFarmItem } from "../types";
 
 const url = config.WS_URL;
 
-export interface TakerFarmItem {
-  farmHash: string;
-  name: string;
-  lockedTime: number; // 允许解锁时间
-  stakeTokenChainId: number; // 质押资产链id
-  stakeTokenAssetId: number; // 质押资产id
-  stakeTokenDecimals: number; // 质押资产小数位数
-  stakeTokenSymbol: string; // 质押资产简写
-  syrupTokenChainId: number; // 奖励资产链id
-  syrupTokenAssetId: number; // 奖励资产id
-  syrupTokenDecimals: number; // 奖励资产小数位数
-  syrupTokenSymbol: string; // 奖励资产简写
-  syrupTokenBalance: number; // pool中奖励资产余额
-  stakeTokenBalance: number; // pool中质押资产总量
-  totalSyrupAmount: number; // pool总的奖励资产
-  apr: number; // 年化收益
-  tatalStakeTokenUSD: number; // 质押资产总价值
-  swapPairAddress: string; // lp资产时，对应的swap交易对地址
-  orderNum: number;
-  showDetail: boolean;
-  stakeAmount: number; // 用户已参与质押数量
-  stakeUSD: number; // 用户已参与质押USD
-  pendingReward: number; // 用户未领取奖励数量
-  pendingRewardUSD: number; // 用户未领取奖励USD
-  isLocked: boolean; // 是否已解锁
-}
-
-interface UserStakeFarm {
-  farmHash: string;
-  syrupTokenBalance: number;
-  stakeTokenBalance: number;
-  apr: number;
-  tatalStakeTokenUSD: number;
-  stakedTokenAmount: number;
-  pendingReward: number;
-  pendingRewardUSD: number;
-  stakedTokenAmountUSD: number;
-}
-
-interface Data {
-  takerList: TakerFarmItem[];
-  uniList: any[];
-}
-
 export default function useData(isPool: boolean) {
-  const store = useStore();
-  const state = reactive<Data>({
+  const state = reactive<FarmList>({
     takerList: [],
     uniList: []
   });
-  let totalUniList: any = [];
-  let totalTakerList: any = [];
+  let totalUniList: UniFarmItem[] = [];
+  let totalTakerList: TakerFarmItem[] = [];
   let filterType = "1"; // 排序类型 1.按照收益排名 2.按照流动性排名
   let onlySeeMortgage = false; // 只看已质押
   onBeforeUnmount(() => {
-    unListen(url, "farmList");
     subSocket.unListen(url, "farmListSub");
   });
   async function getFarmData(farmHash?: string) {
+    const data = ((await getTakerFarm(farmHash)) || []) as TakerFarmItem[];
     const times = +new Date();
-    const channel = "farmList";
-    const params = {
-      method: channel,
-      id: genId(),
-      params: {
-        farmHash: ""
-      }
-    };
-    if (farmHash) {
-      params.params.farmHash = farmHash;
-    }
-    const data: any = await listen({
-      url,
-      channel,
-      params: {
-        cmd: true,
-        channel: "cmd:" + JSON.stringify(params),
-      }
-    });
-    data.map((v: TakerFarmItem) => {
-      v.stakeAmount = 0;
+    data.map(v => {
+      v.stakeAmount = "0";
       v.stakeUSD = 0;
       v.pendingRewardUSD = 0;
-      v.pendingReward = 0;
-      // @ts-ignore
-      v.isLocked = Minus(Times(v.lockedTime, 1000), times) < 0;
+      v.pendingReward = "0";
+      v.isLocked = Minus(Times(v.lockedTime, 1000), times).toNumber() < 0;
+      v.syrupTokenBalance = fixNumber(v.syrupTokenBalance, 8);
     });
     totalTakerList = [...data];
     state.takerList = filter(data, filterType, onlySeeMortgage);
   }
 
-  const addressInfo = computed(() => store.state.addressInfo);
+  const { addressInfo, wrongChain: disableTx } = useStoreState();
+
   // 用户参与的farm
   function getUserFarm(farmHash?: string) {
     const address = addressInfo.value?.address?.Taker;
@@ -129,18 +61,19 @@ export default function useData(isPool: boolean) {
         cmd: false,
         channel: channel + ":" + address + (farmHash ? "," + farmHash : "")
       },
-      success(data) {
+      success(data: UserStakeFarm[]) {
+        // console.log(data, 321)
         const totalList = [...state.takerList];
         if (totalList.length) {
-          data.map((item: UserStakeFarm) => {
+          data.map(item => {
             totalList.map(v => {
               if (v.farmHash === item.farmHash) {
                 v.apr = item.apr;
-                v.stakeAmount = item.stakedTokenAmount;
+                v.stakeAmount = fixNumber(item.stakedTokenAmount, 8);
                 v.stakeUSD = item.stakedTokenAmountUSD;
                 v.tatalStakeTokenUSD = item.tatalStakeTokenUSD;
                 v.pendingRewardUSD = item.pendingRewardUSD;
-                v.pendingReward = item.pendingReward;
+                v.pendingReward = fixNumber(item.pendingReward, 8);
               }
             });
           });
@@ -150,10 +83,6 @@ export default function useData(isPool: boolean) {
     });
   }
 
-  // 网络是否错误
-  const disableTx = computed(() => {
-    return store.getters.wrongChain;
-  });
   watch(
     () => disableTx.value,
     () => {
@@ -196,13 +125,13 @@ export default function useData(isPool: boolean) {
         syrupTokenDecimals: 0,
         apr: "",
         lpBalance: "", // 质押资产余额
-        farmHash: item,
+        farmHash: item + "", // taker farm 取hash，uni取index
         showDetail: false
       };
 
       tokenInfo.showDetail = uniList[item]?.showDetail;
 
-      const poolInfoValue = await contract.poolInfo(item); //1.合约地址 2合约地址，3忽略，4：每个区块奖励的糖果总数，5：当前质押资产总量，6，奖励资产的余额（本pool）
+      const poolInfoValue = await contract.poolInfo(item); //1.质押资产合约地址 2.奖励资产合约地址，3忽略，4：每个区块奖励的糖果总数，5：当前质押资产总量，6，奖励资产的余额（本pool）
       // 质押、奖励资产合约地址
       tokenInfo.lpToken = poolInfoValue[0];
       tokenInfo.candyToken = poolInfoValue[1];
@@ -240,8 +169,10 @@ export default function useData(isPool: boolean) {
 
       const dayNumber = 5760; //每日出块数量(86400/15=5760)
       // console.log(tokenInfo, 66333)
-      const candyPrice = await uniAssetPrice(tokenInfo.syrupTokenSymbol) || 0;
-      const lpPrice = await uniAssetPrice(tokenInfo.stakeTokenSymbol) || 0;
+      const candyPrice: any =
+        (await uniAssetPrice(tokenInfo.syrupTokenSymbol)) || "0";
+      const lpPrice: any =
+        (await uniAssetPrice(tokenInfo.stakeTokenSymbol)) || "0";
 
       // 每天产生的奖励总价值
       const c = Times(
@@ -278,22 +209,28 @@ export default function useData(isPool: boolean) {
         );
 
         // 待领取收益数量-usd
-        tokenInfo.pendingRewardUSD = fixNumber(Times(
-          tokenInfo.pendingReward,
-          candyPrice
-        ).toString(), 4);
+        tokenInfo.pendingRewardUSD = fixNumber(
+          Times(tokenInfo.pendingReward, candyPrice).toFixed(),
+          4
+        );
 
         // console.log(tokenInfo.pendingReward, 99)
 
         // 已质押数量
         const userInfoValue = await contract.userInfo(item, address);
-        tokenInfo.stakeAmount = divisionDecimals(
-          userInfoValue[0].toString(),
-          tokenInfo.stakeTokenDecimals
+        tokenInfo.stakeAmount = fixNumber(
+          divisionDecimals(
+            userInfoValue[0].toString(),
+            tokenInfo.stakeTokenDecimals
+          ),
+          8
         );
 
         // 已质押数量-usd
-        tokenInfo.stakeUSD = Times(tokenInfo.stakeAmount, lpPrice).toString();
+        tokenInfo.stakeUSD = fixNumber(
+          Times(tokenInfo.stakeAmount, lpPrice).toFixed(),
+          4
+        );
 
         // 质押token余额
         const balanceOfValue = await contractTwo.balanceOf(address);
@@ -314,8 +251,7 @@ export default function useData(isPool: boolean) {
     filterType = type;
     onlySeeMortgage = mortgage;
     if (totalUniList.length) {
-      const uniList = filter([...totalUniList], type, mortgage, true);
-      state.uniList = uniList;
+      state.uniList = filter([...totalUniList], type, mortgage, true);
     }
     if (totalTakerList.length) {
       const takerList = filter([...totalTakerList], type, mortgage);
@@ -337,9 +273,6 @@ export default function useData(isPool: boolean) {
       newList = [...newList].filter(v => Number(v.stakeAmount));
     }
     const sortBy = type === "1" ? "apr" : "tatalStakeTokenUSD";
-    const res = [...newList].sort((a, b) => {
-      return b[sortBy] - a[sortBy];
-    });
     return [...newList].sort((a, b) => {
       return b[sortBy] - a[sortBy];
     });

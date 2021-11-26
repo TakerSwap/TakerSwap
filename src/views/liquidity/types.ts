@@ -1,4 +1,7 @@
 import { TokenInfo } from "@/views/trading/types";
+import { AssetItem } from "@/store";
+
+export { AssetItem };
 
 interface LpTokenInfo {
   token: TokenInfo;
@@ -14,3 +17,17 @@ export interface LiquidityItem {
   lpTokenAmount: LpTokenInfo;
 }
 
+export interface AddLiquidityState {
+  feeRate: string;
+  fromAmount: string;
+  toAmount: string;
+  fromAsset: AssetItem | null;
+  toAsset: AssetItem | null;
+  fromAmountError: string;
+  toAmountError: string;
+  disableWatchFromAmount: boolean;
+  disableWatchToAmount: boolean;
+  insufficient: boolean;
+  loading: boolean;
+  disableCreate: boolean;
+}

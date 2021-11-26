@@ -56,7 +56,7 @@
               Farm
               <span class="more" @click="toUrl">
                 {{ $t("home.home9") }}
-                <i class="el-icon-arrow-right"></i>
+                <el-icon><arrow-right /></el-icon>
               </span>
             </div>
             <div class="farm-list">
@@ -87,7 +87,7 @@
             Farm
             <span class="more" @click="toUrl">
               {{ $t("home.home9") }}
-              <i class="el-icon-arrow-right"></i>
+              <el-icon><arrow-right /></el-icon>
             </span>
           </div>
           <div class="farm-list">
@@ -214,9 +214,9 @@
 
 <script>
 import FarmSymbol from "@/views/farm/FarmSymbol.vue";
-import { listen } from "@/api/websocket";
+import { listen } from "@/service/socket/websocket";
 import config from "@/config";
-import { genId, divisionDecimals } from "@/api/util";
+import { genId, divisionDecimals } from "@/utils/util";
 
 const url = config.WS_URL;
 

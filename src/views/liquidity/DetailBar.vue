@@ -33,7 +33,11 @@
         </span>
       </div>
       <div class="confirm-wrap">
-        <el-button :disabled="quitNumber === ''" @click="quit" type="primary">
+        <el-button
+          :disabled="quitNumber === '' || !!amountError"
+          @click="quit"
+          type="primary"
+        >
           {{ $t("liquidity.liquidity6") }}
         </el-button>
       </div>
@@ -41,24 +45,31 @@
   </div>
 </template>
 
-<script>
-import { defineComponent, ref, computed } from "vue";
-import { Times, timesDecimals, divisionDecimals, Minus } from "@/api/util";
+<script lang="ts">
+import { defineComponent, ref, PropType } from "vue";
+import { Times, timesDecimals, divisionDecimals, Minus } from "@/utils/util";
 import nerve from "nerve-sdk-js";
 import { useI18n } from "vue-i18n";
-import { NTransfer } from "@/api/api";
-import { useStore } from "vuex";
-import { calMinAmountOnSwapRemoveLiquidity, getSwapPairInfo } from "@/model";
+// @ts-ignore
+import { NTransfer } from "@/utils/api";
+import {
+  calMinAmountOnSwapRemoveLiquidity,
+  getSwapPairInfo
+} from "@/service/api";
 import { useToast } from "vue-toastification";
+import { LiquidityItem } from "./types";
+import useBroadcastNerveHex from "@/hooks/useBroadcastNerveHex";
 
 export default defineComponent({
   props: {
-    info: Object,
+    info: {
+      type: Object as PropType<LiquidityItem>,
+      default: () => {}
+    },
     takerAddress: String
   },
   setup(props, context) {
     const { t } = useI18n();
-    const store = useStore();
     const toast = useToast();
     const rates = ref([25, 50, 75, 100]);
     const quitNumber = ref("");
@@ -67,25 +78,22 @@ export default defineComponent({
     const expectedAmountB = ref("");
     const currentIndex = ref(-1);
     const amountError = ref("");
-    function handleInput(val) {
+    function handleInput(val: string) {
       if (!Number(val)) showInfo.value = false;
       const availableLiquidity = props.info.amount;
       currentIndex.value = -1;
-      if (Minus(availableLiquidity, val) < 0) {
+      if (Minus(availableLiquidity, val).toNumber() < 0) {
         showInfo.value = false;
-        amountError.value = "超过最大撤出数量";
+        // amountError.value = "超过最大撤出数量";
+        amountError.value = t("liquidity.liquidity16");
         return;
       } else {
         amountError.value = "";
         Number(val) !== 0 && calRemoveLiquidity();
       }
-      // const patrn = new RegExp("^([1-9][\\d]{0,20}|0)(\\.[\\d])?$");
-      // if (patrn.exec(val) || val === "") {
-      //   quitNumber.value = val;
-      // }
     }
 
-    async function getNumber(item, index) {
+    async function getNumber(item: number, index: number) {
       amountError.value = "";
       currentIndex.value = index;
       showInfo.value = true;
@@ -108,7 +116,7 @@ export default defineComponent({
         reserve1,
         tokenLP,
         totalLP
-      } = await getSwapPairInfo(params);
+      }: any = await getSwapPairInfo(params);
       const tempNervePair = nerve.swap.pair(
         tempToken0,
         tempToken1,
@@ -125,7 +133,7 @@ export default defineComponent({
         tempToken1.assetChainId,
         tempToken1.assetId
       );
-      const { amountA, amountB } = await nerve.swap.calRemoveLiquidity(
+      const { amountA, amountB } = nerve.swap.calRemoveLiquidity(
         timesDecimals(quitNumber.value, tokenLP.decimals),
         tokenA,
         tokenB,
@@ -141,6 +149,7 @@ export default defineComponent({
       );
     }
 
+    const { handleHex } = useBroadcastNerveHex();
     async function quit() {
       if (!Number(quitNumber.value)) return;
       try {
@@ -160,7 +169,7 @@ export default defineComponent({
           LP.token.assetId,
           removeAmount
         );
-        const minRemove = await calMinAmountOnSwapRemoveLiquidity({
+        const minRemove: any = await calMinAmountOnSwapRemoveLiquidity({
           amountLP: removeAmount, //LP.amount,
           tokenAStr: tokenA.assetChainId + "-" + tokenA.assetId,
           tokenBStr: tokenB.assetChainId + "-" + tokenB.assetId
@@ -190,7 +199,7 @@ export default defineComponent({
           toAddress,
           ""
         );
-        const res = await handleHex(tx.hex);
+        const res: any = await handleHex(tx.hex);
         if (res && res.hash) {
           quitNumber.value = "";
           setTimeout(() => {
@@ -207,21 +216,6 @@ export default defineComponent({
       context.emit("loading", false);
     }
 
-    const addressInfo = computed(() => {
-      return store.state.addressInfo;
-    });
-
-    async function handleHex(hex) {
-      const tAssemble = nerve.deserializationTx(hex);
-      const transfer = new NTransfer({ chain: "NERVE" });
-      const txHex = await transfer.getTxHex({
-        tAssemble,
-        pub: addressInfo.value?.pub,
-        signAddress: addressInfo.value?.address?.Ethereum
-      });
-      console.log(txHex, "===txHex===");
-      return await transfer.broadcastHex(txHex);
-    }
     return {
       rates,
       quitNumber,
@@ -241,7 +235,7 @@ export default defineComponent({
 <style lang="scss" scoped>
 @import "../../assets/css/style.scss";
 .detail-bar {
-  height: 174px;
+  min-height: 174px;
   padding: 20px;
   border-radius: 20px;
   background-color: $detailBar;
@@ -322,7 +316,7 @@ export default defineComponent({
   }
 }
 .text-red {
-  color: red;
-  font-size: 14px;
+  color: #f56c6c;
+  font-size: 12px;
 }
 </style>

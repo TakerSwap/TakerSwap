@@ -166,12 +166,14 @@
                   ≈{{ $thousands(item.valuation) }}
                 </div>
               </div>
-              <i
+              <el-icon
                 :class="[
-                  'el-icon-caret-right',
+                  'icon-caret-right',
                   item.showDetail ? 'rotate-icon' : ''
                 ]"
-              ></i>
+              >
+                <CaretRight />
+              </el-icon>
             </div>
           </div>
           <div class="t_info">
@@ -238,10 +240,18 @@
 </template>
 
 <script>
-import { defineComponent, ref, watch, computed, onMounted, provide, getCurrentInstance } from "vue"
+import {
+  defineComponent,
+  ref,
+  watch,
+  computed,
+  onMounted,
+  provide,
+  getCurrentInstance
+} from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { superLong, _networkInfo } from "@/api/util";
+import { superLong, _networkInfo } from "@/utils/util";
 import SymbolIcon from "@/components/SymbolIcon.vue";
 import AssetsManage from "./AssetsManage.vue";
 import Transfer from "./transfer/index.vue";
@@ -384,7 +394,10 @@ export default defineComponent({
       let supportedChain = false;
       item.heterogeneousList.map(v => {
         Object.keys(_networkInfo).map(key => {
-          if (_networkInfo[key].chainId === v.heterogeneousChainId && key === network.value) {
+          if (
+            _networkInfo[key].chainId === v.heterogeneousChainId &&
+            key === network.value
+          ) {
             supportedChain = true;
           }
         });
@@ -706,7 +719,7 @@ export default defineComponent({
       flex: 1;
       justify-content: flex-end;
     }
-    .el-icon-caret-right {
+    .icon-caret-right {
       font-size: 16px;
       margin-left: 5px;
       transition: transform 0.1s ease;

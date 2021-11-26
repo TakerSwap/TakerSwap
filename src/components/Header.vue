@@ -26,7 +26,6 @@
         </auth-button>
       </div>
       <div class="account">
-        <!--<i class="el-icon-s-finance"></i>-->
         <div
           class="connection"
           v-if="!address"
@@ -34,29 +33,24 @@
         >
           {{ $t("header.header3") }}
         </div>
-        <div
-          class="wrong-chain"
-          v-else-if="wrongChain"
-          style="color: red; font-size: 14px"
-        >
+        <div class="address-wrap" v-else>
           <SwitchChain
             v-model="showSwitchChain"
             :chainId="chainId"
           >
-            <p @click="showSwitchChain = true">{{ $t("public.public18") }}</p>
+            <template v-if="wrongChain">
+              <p class="wrong-chain" @click="showSwitchChain = true">{{ $t("public.public18") }}</p>
+            </template>
+            <template v-else>
+              <div class="chain-wrap" @click="showSwitchChain = true">
+                <img :src="chainLogo" alt="" />
+                <el-icon style="margin-right: 5px"><caret-bottom /></el-icon>
+                <span @click.stop="manageAccount = true">
+                  {{ superLong(address, 5) }}
+                </span>
+              </div>
+            </template>
           </SwitchChain>
-        </div>
-        <div v-else class="address-warp">
-          <SwitchChain
-              v-model="showSwitchChain"
-              :chainId="chainId"
-          >
-            <div class="chain-wrap" @click="showSwitchChain = true">
-              <img :src="chainLogo" alt="" />
-              <i class="el-icon-caret-bottom"></i>
-            </div>
-          </SwitchChain>
-          <span @click="manageAccount = true">{{ superLong(address, 4) }}</span>
         </div>
       </div>
     </div>
@@ -91,7 +85,7 @@
         <div class="content">
           <div class="top">
             <p>
-              <span class="pc">{{ superLong(address, 9) }}</span>
+              <span class="pc">{{ superLong(address, 8) }}</span>
               <span class="mobile">{{ superLong(address, 7) }}</span>
             </p>
             <p>
@@ -116,13 +110,13 @@
 
 <script lang="ts">
 import { defineComponent, ref, watch, computed } from "vue";
-import { superLong, getCurrentAccount, _networkInfo } from "@/api/util";
+import { superLong, getCurrentAccount, _networkInfo, isNULSOrNERVE } from "@/utils/util";
 import useEthereum, { providerList } from "@/hooks/useEthereum";
 import { useRouter, useRoute } from "vue-router";
 import { useStore } from "vuex";
-import config from "@/config";
 import AuthButton from "./AuthButton.vue";
 import SwitchChain from "./SwitchChain.vue";
+import useStoreState from "@/hooks/useStoreState";
 
 export default defineComponent({
   name: "Header",
@@ -141,19 +135,13 @@ export default defineComponent({
     // const showConnect = store.state.showConnect;
     const { address, chainId, initProvider, connect, disconnect } =
       useEthereum();
-    const takerAddress = computed(() => {
-      return store.getters.takerAddress;
-    });
+    const { takerAddress, wrongChain: notL1Chain } = useStoreState();
     initProvider();
     watch(
       () => address.value,
       val => {
         if (val) {
           const currentAccount = getCurrentAccount(val);
-          // if (!currentAccount) {
-          //   router.push("/login");
-          // }
-          // console.log(currentAccount, 9999);
           store.commit("setCurrentAddress", currentAccount || {});
         }
       },
@@ -219,17 +207,14 @@ export default defineComponent({
     }
 
     const wrongChain = computed(() => {
-      return store.getters.wrongChain;
+      const NULSOrNERVE = address.value && isNULSOrNERVE(address.value);
+      if (NULSOrNERVE) {
+        return false;
+      } else {
+        return notL1Chain.value;
+      }
     });
 
-    function switchChain() {
-      /*const chainId = config.ETHNET === "ropsten" ? "0x3" : "0x1";
-      // const rpcUrl = "https://ropsten.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161";
-      window.ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId }]
-      });*/
-    }
     const authRef = ref(null);
     async function derivedAddress() {
       // @ts-ignore
@@ -241,6 +226,7 @@ export default defineComponent({
 
     const chainLogo = computed(() => {
       const network = store.getters.chain;
+      // console.log(network, 666)
       const { logo } = _networkInfo[network];
       return logo;
     });
@@ -261,7 +247,6 @@ export default defineComponent({
       takerAddress,
       isCollapse,
       wrongChain,
-      switchChain,
       authRef,
       derivedAddress,
       chainLogo,
@@ -349,7 +334,7 @@ export default defineComponent({
     }
   }
   .account {
-    width: 144px;
+    width: 170px;
     height: 36px;
     margin-left: 30px;
     //background: #fff;
@@ -360,14 +345,21 @@ export default defineComponent({
     color: $txColor;
     line-height: 36px;
     text-align: center;
-    .address-warp {
+    .address-wrap {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 10px 0 5px;
       height: 100%;
-      line-height: 1;
+      //line-height: 1;
       position: relative;
+      .switch-chain-wrapper {
+        width: 100%;
+      }
+      .wrong-chain {
+        color: red;
+        font-size: 14px;
+      }
       .chain-wrap {
         display: flex;
         align-items: center;
@@ -379,6 +371,8 @@ export default defineComponent({
       }
       span {
         cursor: pointer;
+        font-size: 14px;
+        height: 100%;
         &:hover {
           opacity: 0.6;
         }
@@ -435,6 +429,9 @@ export default defineComponent({
           font-size: 32px;
           cursor: pointer;
           margin-left: 20px;
+          &.icon-tiaozhuanlianjie {
+            font-size: 30px;
+          }
         }
       }
       .bottom {
@@ -491,6 +488,9 @@ export default defineComponent({
         font-size: 22px;
         i {
           font-size: 24px;
+          &.icon-tiaozhuanlianjie {
+            font-size: 22px;
+          }
         }
       }
       .content {

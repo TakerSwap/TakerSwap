@@ -1,7 +1,7 @@
 import useStoreState from "@/hooks/useStoreState";
 import nerve from "nerve-sdk-js";
 // @ts-ignore
-import { NTransfer } from "@/api/api";
+import { NTransfer } from "@/utils/api";
 import { broadcastHex } from "@/service/api";
 
 export default function useBroadcastNerveHex() {

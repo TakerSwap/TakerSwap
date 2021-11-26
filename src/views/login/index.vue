@@ -33,6 +33,7 @@ import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
 import { useToast } from "vue-toastification";
+import storage from "@/utils/storage";
 
 const ethers = require("ethers");
 
@@ -90,8 +91,7 @@ export default defineComponent({
             pub,
             prefix
           );
-          const accountList =
-            JSON.parse(localStorage.getItem("accountList")) || [];
+          const accountList = storage.get("local", "accountList") || [];
           const existIndex = accountList.findIndex(v => v.pub === account.pub);
           // 原来存在就替换，找不到就push
           if (existIndex > -1) {
@@ -99,7 +99,7 @@ export default defineComponent({
           } else {
             accountList.push(account);
           }
-          localStorage.setItem("accountList", JSON.stringify(accountList));
+          storage.set("local", "accountList", accountList);
           store.commit("setCurrentAddress", account);
           const fromPath = route.redirectedFrom?.fullPath || "/";
           router.push(fromPath);

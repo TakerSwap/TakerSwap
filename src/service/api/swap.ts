@@ -1,4 +1,4 @@
-import { listen } from "@/api/promiseSocket";
+import { listen } from "@/service/socket/promiseSocket";
 import config from "@/config";
 
 const url = config.WS_URL;

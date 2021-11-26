@@ -1,7 +1,10 @@
 const webpack = require("webpack");
-const CompressionWebpackPlugin = require("compression-webpack-plugin");
-const productionGzipExtensions = ["js", "css"];
-const isProduction = process.env.NODE_ENV === "production";
+// const CompressionWebpackPlugin = require("compression-webpack-plugin");
+// const productionGzipExtensions = ["js", "css"];
+// const isProduction = process.env.NODE_ENV === "production";
+const Components = require("unplugin-vue-components/webpack");
+const { ElementPlusResolver } = require("unplugin-vue-components/resolvers");
+// const BundleAnalyzerPlugin = require("webpack-bundle-analyzer").BundleAnalyzerPlugin;
 const proxyUrl =
   process.env.BUILD_ENV === "prod"
     ? "https://wallet.nerve.network/"
@@ -9,6 +12,12 @@ const proxyUrl =
 module.exports = {
   publicPath: process.env.NODE_ENV === "production" ? "/" : "/",
   configureWebpack: config => {
+    // element-plus import es-module
+    config.module.rules.push({
+      test: /\.mjs$/,
+      include: /node_modules/,
+      type: "javascript/auto"
+    });
     // if (isProduction) {
     //   config.plugins.push(
     //     new CompressionWebpackPlugin({
@@ -27,14 +36,31 @@ module.exports = {
         }
       })
     );
-    /* config.externals = {
-      'vue': 'Vue',
-      'vue-router': 'VueRouter',
-      'vuex': 'Vuex',
-      'moment': 'moment',
-      'element-ui': 'ELEMENT',
-      'echarts': 'echarts',
-    } */
+    // element-plus按需引入
+    config.plugins.push(
+      Components({
+        resolvers: [ElementPlusResolver()]
+      })
+    );
+    config.optimization = {
+      // 添加分包
+      splitChunks: {
+        chunks: "all",
+        cacheGroups: {
+          ethers: {
+            name: "chunk",
+            test: /[\\/]node_modules[\\/](ethers|@element-plus|jsrsasign|nerve-sdk-js)/,
+            priority: -10
+          },
+          vendors: {
+            name: "vendors",
+            test: /[\\/]node_modules[\\/]^(element-plus)/,
+            priority: -20
+          }
+        }
+      }
+    };
+    // config.plugins.push(new BundleAnalyzerPlugin());
   },
 
   devServer: {

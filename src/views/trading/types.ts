@@ -55,7 +55,7 @@ export interface TokenInfo {
   decimals: number;
 }
 
-export interface WholeTradeExactIn {
+export interface SwapPairInfo {
   token0: TokenInfo;
   token1: TokenInfo;
   reserve0: string;
