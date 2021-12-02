@@ -28,7 +28,8 @@ const en = {
     public15: "Fee: ",
     public16: "Balance: ",
     public17: "Insufficient Liquidity",
-    public18: "Network Error"
+    public18: "Network Error",
+    public19: "No Data"
   },
   home: {
     home1: "TVL: ",

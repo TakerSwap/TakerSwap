@@ -5,7 +5,7 @@ const env = process.env.BUILD_ENV as EnvType;
 function getWSUrl(): string {
   let url;
   if (env === "beta") {
-    url = "ws://seeda.nuls.io:8009/ws";
+    url = "ws://beta.api.swap.nerve.network/ws";
     // url = "ws://api.swap.nerve.network/ws"
   } else {
     url = "wss://api.swap.nerve.network/ws";

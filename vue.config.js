@@ -64,7 +64,8 @@ module.exports = {
   },
 
   devServer: {
-    port: 8031,
+    port: 8030, // dev-beta
+    // port: 8031, // dev-prod
     host: "0.0.0.0",
     https: false,
     open: true,

@@ -88,6 +88,12 @@
       &.is-active,&:hover {
         color: $txColor;
       }
+      &.is-disabled {
+        cursor: not-allowed;
+      }
+      &.is-disabled:hover {
+        color: $labelColor;
+      }
 
     }
     .el-tabs__active-bar {

@@ -28,7 +28,8 @@ const cn = {
     public15: "手续费: ",
     public16: "余额: ",
     public17: "流动性不足",
-    public18: "网络错误"
+    public18: "网络错误",
+    public19: "暂无数据"
   },
   home: {
     home1: "总质押: ",
