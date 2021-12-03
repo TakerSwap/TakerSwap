@@ -4,59 +4,57 @@
     v-loading="loading"
     element-loading-background="rgba(24, 24, 55, 0.8)"
   >
-    <el-empty description="No Data" v-if="!list.length" />
-    <template v-if="true">
-      <div class="lis" v-for="(item, index) of list" :key="index">
-        <div class="title" @click="showId(item.farmHash)">
-          <farm-symbol :name="item.name"></farm-symbol>
-          <ul>
-            <li class="fl">
-              <p>{{ $t("farm.farm2") }}</p>
-              <h2>
-                {{ $thousands(item.pendingReward) }} {{ item.syrupTokenSymbol }}
-              </h2>
-            </li>
-            <li class="fl">
-              <p>{{ $t("farm.farm3") }}</p>
-              <h2>{{ Number(item.apr) ? item.apr + "%" : "--" }}</h2>
-            </li>
-            <li class="fl">
-              <p>{{ $t("farm.farm4") }}</p>
-              <h2>
-                {{
-                  Number(item.tatalStakeTokenUSD)
-                    ? "$" + $thousands(item.tatalStakeTokenUSD)
-                    : "--"
-                }}
-              </h2>
-            </li>
-            <li class="fl">
-              <p>{{ $t("farm.farm5") }}</p>
-              <h2>
-                {{ $thousands(item.syrupTokenBalance) }}
-                {{ item.syrupTokenSymbol }}
-              </h2>
-            </li>
-          </ul>
-          <div class="link view">
+    <el-empty :description="$t('public.public19')" v-if="!list.length" />
+    <div class="lis" v-for="(item, index) of list" :key="index">
+      <div class="title" @click="showId(item.farmHash)">
+        <farm-symbol :name="item.name"></farm-symbol>
+        <ul>
+          <li class="fl">
+            <p>{{ $t("farm.farm2") }}</p>
+            <h2>
+              {{ $thousands(item.pendingReward) }} {{ item.syrupTokenSymbol }}
+            </h2>
+          </li>
+          <li class="fl">
+            <p>{{ $t("farm.farm3") }}</p>
+            <h2>{{ Number(item.apr) ? item.apr + "%" : "--" }}</h2>
+          </li>
+          <li class="fl">
+            <p>{{ $t("farm.farm4") }}</p>
+            <h2>
+              {{
+                Number(item.tatalStakeTokenUSD)
+                  ? "$" + $thousands(item.tatalStakeTokenUSD)
+                  : "--"
+              }}
+            </h2>
+          </li>
+          <li class="fl">
+            <p>{{ $t("farm.farm5") }}</p>
+            <h2>
+              {{ $thousands(item.syrupTokenBalance) }}
+              {{ item.syrupTokenSymbol }}
+            </h2>
+          </li>
+        </ul>
+        <div class="link view">
 <!--            {{ $t("farm.farm6") }}-->
-            <el-icon :class="{ expand: item.showDetail }">
-              <arrow-right />
-            </el-icon>
-          </div>
+          <el-icon :class="{ expand: item.showDetail }">
+            <arrow-right />
+          </el-icon>
         </div>
-        <collapse-transition>
-          <DetailsBar
-            :tokenInfo="item"
-            :isTaker="isTaker"
-            :isPool="isPool"
-            :takerAddress="takerAddress"
-            v-show="item.showDetail"
-            @loading="handleLoading"
-          ></DetailsBar>
-        </collapse-transition>
       </div>
-    </template>
+      <collapse-transition>
+        <DetailsBar
+          :tokenInfo="item"
+          :isTaker="isTaker"
+          :isPool="isPool"
+          :takerAddress="takerAddress"
+          v-show="item.showDetail"
+          @loading="handleLoading"
+        ></DetailsBar>
+      </collapse-transition>
+    </div>
 <!--    <div class="more" v-if="isTaker && takerAddress">
       <span class="link" @click="createFarm">{{ $t("farm.farm11") }}</span>
     </div>-->

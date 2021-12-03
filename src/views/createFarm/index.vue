@@ -128,7 +128,7 @@ import useBroadcastNerveHex from "@/hooks/useBroadcastNerveHex";
 import useMyFarm from "./hooks/useMyFarm";
 import { ElForm } from "element-plus";
 
-import { AssetItem } from "@/store";
+import {AssetItem} from "@/store/types";
 
 export default defineComponent({
   name: "CreateFarm",

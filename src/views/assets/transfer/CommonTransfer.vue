@@ -20,159 +20,143 @@
         :icon="transferAsset.symbol"
         :assetList="assetsList"
         :balance="balance"
-        :errorTip="amountErrorTip"
         @selectAsset="selectAsset"
         @max="max"
       ></custom-input>
     </div>
     <div class="confirm-wrap">
       <el-button type="primary" @click="sendTx" :disabled="disableTransfer">
-        {{ $t("transfer.transfer10") }}
+        {{ amountErrorTip || $t("transfer.transfer10") }}
       </el-button>
     </div>
   </div>
 </template>
 
-<script>
-import { defineComponent } from "vue";
+<script lang="ts">
+import { defineComponent, ref, computed, watch, inject } from "vue";
 import CustomInput from "@/components/CustomInput.vue";
 import { Minus, timesDecimals } from "@/utils/util";
+// @ts-ignore
 import { NTransfer } from "@/utils/api";
+
+import { rootCmpKey, RootComponent, AssetItemType } from "../types";
+import { useI18n } from "vue-i18n";
+import { useToast } from "vue-toastification";
+import useBroadcastNerveHex from "@/hooks/useBroadcastNerveHex";
+
 export default defineComponent({
   name: "commonTransfer",
   inject: ["father"],
   components: {
     CustomInput
   },
-  data() {
-    return {
-      loading: false,
-      assetsList: [],
-      amount: "",
-      balance: "",
-      transferAsset: {},
-      toAddress: "",
-      addressError: false,
-      amountErrorTip: ""
-    };
-  },
-  watch: {
-    toAddress(val) {
-      if (val) {
-        const valid = this.transfer.validateAddress(val);
-        this.addressError = !valid;
-      }
-    },
-    amount(val) {
-      if (val) {
-        /* let decimals = this.transferAsset.decimals || 0;
-        let patrn = "";
-        if (!decimals) {
-          patrn = new RegExp("^([1-9][\\d]{0,20}|0)(\\.[\\d])?$");
-        } else {
-          patrn = new RegExp(
-            "^([1-9][\\d]{0,20}|0)(\\.[\\d]{0," + decimals + "})?$"
-          );
-        }
-        if (!patrn.exec(val)) {
-          this.amountErrorTip = this.$t("transfer.transfer17") + decimals;
-        } else  */
-        if (!Number(this.balance) || Minus(this.balance, this.amount) < 0) {
-          this.amountErrorTip = this.$t("transfer.transfer15");
-        } else {
-          this.amountErrorTip = "";
-        }
-      }
-    },
-    "father.allAssetsList": {
-      deep: true,
-      handler(val) {
-        // console.log()
-        if (val.length) {
-          this.assetsList = [...val];
-          this.balance = this.assetsList.find(
-            v => v.assetKey === this.transferAsset.assetKey
-          )?.available;
-        }
-      }
-    }
-  },
-  computed: {
-    disableTransfer() {
-      return !!(
-        !this.toAddress ||
-        !Number(this.amount) ||
-        !Number(this.balance) ||
-        this.addressError ||
-        this.amountErrorTip
-      );
-    }
-  },
-  mounted() {
-    this.assetsList = [...this.father.allAssetsList];
-    this.selectAsset(this.father.transferAsset);
-    /*this.balance = this.assetsList.find(
-      v => v.assetKey === this.transferAsset.assetKey
-    )?.available;*/
-    this.transfer = new NTransfer({
+  setup() {
+    const father = inject(rootCmpKey, {} as RootComponent);
+    const { t } = useI18n();
+    const toast = useToast();
+    const transfer = new NTransfer({
       chain: "NERVE",
       type: 2
     });
-  },
-  methods: {
-    selectAsset(asset) {
-      this.transferAsset = asset;
-      this.balance = asset.available;
-    },
-    max() {
-      this.amount = this.balance;
-    },
-    async sendTx() {
+
+    const loading = ref(false);
+    const amount = ref("");
+    const assetsList = computed(() => father.allAssetsList);
+
+    const transferAsset = ref(father.transferAsset);
+    const balance = computed(() => {
+      const asset = assetsList.value.find(asset => {
+        return asset.assetKey === transferAsset.value.assetKey;
+      });
+      return asset ? asset.available : "";
+    });
+
+    const amountErrorTip = ref("");
+    watch(
+      () => amount.value,
+      val => {
+        if (
+          !Number(balance.value) ||
+          Minus(balance.value, val).toNumber() < 0
+        ) {
+          amountErrorTip.value = t("transfer.transfer15");
+        } else {
+          amountErrorTip.value = "";
+        }
+      }
+    );
+
+    const disableTransfer = computed(() => {
+      return !!(
+        !toAddress.value ||
+        !amount.value ||
+        !balance.value ||
+        addressError.value ||
+        amountErrorTip.value
+      );
+    });
+
+    const toAddress = ref("");
+    const addressError = ref(false);
+    watch(
+      () => toAddress.value,
+      val => {
+        if (val) {
+          addressError.value = !transfer.validateAddress(val);
+        }
+      }
+    );
+
+    function selectAsset(asset: AssetItemType) {
+      transferAsset.value = asset;
+    }
+
+    function max() {
+      amount.value = balance.value;
+    }
+
+    const { handleTxInfo } = useBroadcastNerveHex();
+    async function sendTx() {
       try {
-        this.loading = true;
-        const { chainId, assetId, decimals } = this.transferAsset;
+        loading.value = true;
+        const { chainId, assetId, decimals } = transferAsset.value;
         const transferInfo = {
-          from: this.father.takerAddress,
-          to: this.toAddress,
+          from: father.takerAddress,
+          to: toAddress.value,
           assetsChainId: chainId,
           assetsId: assetId,
-          amount: timesDecimals(this.amount, decimals),
+          amount: timesDecimals(amount.value, decimals),
           fee: 0
         };
-
-        console.log(transferInfo);
-        const inputOuput = await this.transfer.transferTransaction(
-          transferInfo
-        );
-        // console.log(inputOuput, 456456465)
-        const addressInfo = this.$store.state.addressInfo;
-        const data = {
-          inputs: inputOuput.inputs,
-          outputs: inputOuput.outputs,
-          txData: {},
-          pub: addressInfo.pub,
-          signAddress: addressInfo.address.Ethereum
-        };
-        const txHex = await this.transfer.getTxHex(data);
-
-        const result = await this.transfer.broadcastHex(txHex);
+        const result: any = await handleTxInfo(transferInfo, 2, {});
         if (result && result.hash) {
-          this.amount = "";
-          this.toAddress = "";
-          this.$toast(this.$t("transfer.transfer14"));
+          amount.value = "";
+          toAddress.value = "";
+          toast.success(t("transfer.transfer14"));
         } else {
-          this.$toast("Broadcast tx failed", {
-            type: "error"
-          });
+          toast.error(t("transfer.transfer23"));
         }
       } catch (e) {
         console.log(e, "common-transfer-error");
-        this.$toast(e.message || e, {
-          type: "error"
-        });
+        toast.error(e.message || e);
       }
-      this.loading = false;
+      loading.value = false;
     }
+
+    return {
+      loading,
+      amount,
+      balance,
+      amountErrorTip,
+      assetsList,
+      transferAsset,
+      disableTransfer,
+      toAddress,
+      addressError,
+      selectAsset,
+      max,
+      sendTx
+    };
   }
 });
 </script>

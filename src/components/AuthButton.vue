@@ -15,17 +15,18 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, watch } from "vue";
 import { useStore } from "vuex";
 import { useToast } from "vue-toastification";
 import useEthereum from "@/hooks/useEthereum";
 import { useI18n } from "vue-i18n";
 import config from "@/config";
-import { watch } from "vue";
 import { getCurrentAccount } from "@/utils/util";
 import storage from "@/utils/storage";
+import { Account } from "@/store/types";
 
-export default {
+export default defineComponent({
   props: {
     label: String
   },
@@ -35,7 +36,7 @@ export default {
     const toast = useToast();
     const { address, initProvider, generateAddress } = useEthereum();
     initProvider();
-    function showConnectDialog(state) {
+    function showConnectDialog(state: boolean) {
       store.commit("changeConnectShow", state);
     }
     watch(
@@ -68,7 +69,8 @@ export default {
           },
           NULSConfig
         );
-        const accountList = storage.get("local", "accountList") || [];
+        const accountList: Account[] =
+          storage.get("local", "accountList") || [];
         const existIndex = accountList.findIndex(v => v.pub === account.pub);
         // 原来存在就替换，找不到就push
         if (existIndex > -1) {
@@ -96,7 +98,7 @@ export default {
       address
     };
   }
-};
+});
 </script>
 
 <style lang="scss"></style>

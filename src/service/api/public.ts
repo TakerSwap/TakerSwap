@@ -3,7 +3,8 @@ import {
   createRPCParams,
   divisionAndFix,
   Plus,
-  Times
+  Times,
+  checkCanToL1
 } from "@/utils/util";
 import { listen } from "@/service/socket/promiseSocket";
 import config from "@/config";
@@ -146,6 +147,7 @@ export async function getAssetList(address = store.state.destroyAddress) {
     item.originNetwork = Object.values(_networkInfo).find(
       v => v.chainId === item.registerChainId
     )?.name;
+    item.canToL1 = checkCanToL1(item);
   });
   // 返回按字母排序
   const sortDataBySymbol = [...res]

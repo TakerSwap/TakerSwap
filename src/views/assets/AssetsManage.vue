@@ -5,8 +5,8 @@
       :title="$t('assets.assets7')"
       :show-close="false"
       top="10vh"
-      v-model="show"
-      @closed="close"
+      v-model="showDialog"
+      @closed="closed"
     >
       <el-input
         v-model="searchVal"
@@ -32,13 +32,15 @@
         </li>
       </ul>
       <div class="footer-wrap">
-        <el-button @click="close">{{ $t("public.public8") }}</el-button>
+        <el-button @click="showDialog = false">
+          {{ $t("public.public8") }}
+        </el-button>
         <el-button type="primary" @click="confirm">
           {{ $t("public.public9") }}
         </el-button>
       </div>
       <div class="dialog-footer_mobile">
-        <el-button @click="close">
+        <el-button @click="showDialog = false">
           {{ $t("public.public8") }}
         </el-button>
         <el-button type="primary" @click="confirm">
@@ -49,112 +51,118 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, PropType, computed, watch, ref } from "vue";
 import SymbolIcon from "@/components/SymbolIcon.vue";
 import _ from "lodash";
-import storage from "@/utils/storage";
-export default {
+
+import { AssetItemType } from "./types";
+
+export default defineComponent({
   components: {
     SymbolIcon
   },
-  data() {
-    this.allAssetsList = [];
-    return {
-      show: false,
-      list: [],
-      searchVal: ""
-    };
-  },
+
   props: {
     showAssetManage: Boolean,
     assetList: {
-      type: Array,
+      type: Array as PropType<AssetItemType[]>,
       default: () => []
     },
     selectAssets: {
-      type: Array,
+      type: Array as PropType<AssetItemType[]>,
       default: () => []
     }
   },
 
-  watch: {
-    showAssetManage: {
-      immediate: true,
-      handler(val) {
-        console.log(val, 132);
-        this.show = val;
+  emits: ["addAssets", "update:showAssetManage"],
+
+  setup(props, { emit }) {
+    const showDialog = computed({
+      get() {
+        return props.showAssetManage;
+      },
+      set(val) {
+        emit("update:showAssetManage", val);
       }
-    },
-    searchVal(val) {
-      this.filter(val);
-    },
-    assetList: {
-      // deep: true,
-      immediate: true,
-      handler(val) {
-        if (!val || !val.length || (this.show && this.list.length)) return;
-        const list = _.cloneDeep(this.assetList);
-        list.map(item => {
-          item.added = false;
-          this.selectAssets.map(v => {
-            if (item.assetKey === v.assetKey) {
-              item.added = true;
-            }
+    });
+    // watch()
+    const list = ref<AssetItemType[]>([]);
+    let backupList: AssetItemType[] = [];
+    const searchVal = ref("");
+    watch(
+      () => props.showAssetManage,
+      val => {
+        if (val) {
+          const cloneList: AssetItemType[] = _.cloneDeep(props.assetList);
+          cloneList.map(item => {
+            item.added = false;
+            props.selectAssets.map(v => {
+              if (item.assetKey === v.assetKey) {
+                item.added = true;
+              }
+            });
           });
-        });
-        this.allAssetsList = list;
-        this.filter(this.searchVal);
+          list.value = cloneList;
+          backupList = _.cloneDeep(cloneList);
+          filter(searchVal.value);
+        }
       }
-    }
-  },
-  methods: {
-    filter(str) {
+    );
+
+    function filter(str: string) {
       if (!str) {
-        this.list = this.allAssetsList.filter(v => v);
+        list.value = backupList.filter(v => v);
       } else {
-        this.list = this.allAssetsList.filter(v => {
+        list.value = backupList.filter(v => {
           return (
             v.assetKey.indexOf(str) > -1 ||
             v.symbol.toUpperCase().indexOf(str.toUpperCase()) > -1
           );
         });
       }
-    },
-    changeSelect(key) {
-      this.allAssetsList.map(v => {
+    }
+    function changeSelect(key: string) {
+      backupList.map(v => {
         if (v.assetKey === key) {
           v.added = !v.added;
         }
       });
-      this.filter(this.searchVal);
-    },
-    close() {
-      this.$emit("update:showAssetManage", false);
-      this.searchVal = "";
-    },
-    confirm() {
-      const select = [];
-      this.allAssetsList.map(v => {
+      filter(searchVal.value);
+    }
+
+    watch(
+      () => searchVal.value,
+      val => {
+        filter(val);
+      }
+    );
+
+    function confirm() {
+      const select: string[] = [];
+      backupList.map(v => {
         if (v.added) {
           select.push(v.assetKey);
         }
       });
-      const currentAccount = this.$store.state.addressInfo;
-      currentAccount.visiableAssets = select;
-      const accountList = storage.get("local", "accountList") || [];
-      accountList.map(v => {
-        if (v.pub === currentAccount.pub) {
-          v.visiableAssets = select;
-        }
-      });
-      storage.set("local", "accountList", accountList);
-
-      this.$store.commit("setCurrentAddress", currentAccount);
-      this.$emit("addAssets");
-      this.close();
+      emit("addAssets", select);
+      showDialog.value = false;
     }
+
+    function closed() {
+      searchVal.value = "";
+    }
+
+    return {
+      list,
+      showDialog,
+      changeSelect,
+      searchVal,
+      closed,
+      confirm
+    };
   }
-};
+});
 </script>
 <style lang="scss">
 @import "../../assets/css/style.scss";

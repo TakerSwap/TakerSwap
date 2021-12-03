@@ -1,5 +1,4 @@
-import { TokenInfo } from "@/views/trading/types";
-import { AssetItem } from "@/store";
+import { AssetItem, TokenInfo } from "@/views/trading/types";
 
 export { AssetItem };
 

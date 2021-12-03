@@ -44,11 +44,17 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, PropType, ref, watch, computed } from "vue";
 import SymbolIcon from "@/components/SymbolIcon.vue";
-import AssetsDialog from "@/components/AssetsDialog";
+import AssetsDialog from "@/components/AssetsDialog.vue";
 import { superLong } from "@/utils/util";
-export default {
+import _ from "lodash";
+import useStoreState from "@/hooks/useStoreState";
+
+import { AssetItem } from "@/store/types";
+
+export default defineComponent({
   props: {
     label: {
       type: String,
@@ -56,14 +62,14 @@ export default {
     },
     icon: String,
     assetList: {
-      type: Array,
+      type: Array as PropType<AssetItem[]>,
       default: () => []
     },
     inputVal: String,
     balance: [String, Number],
     errorTip: String,
     selectedAsset: {
-      type: Object,
+      type: Object as PropType<AssetItem>,
       default: () => null
     },
     showAmount: {
@@ -75,53 +81,57 @@ export default {
     SymbolIcon,
     AssetsDialog
   },
-  data() {
-    this.allAssetsList = [];
-    return {
-      amount: "",
-      list: [],
-      showDialog: false,
-      searchVal: "",
-      chooseAsset: {}
-    };
-  },
-  watch: {
-    inputVal(val) {
-      this.amount = val;
-    },
-    assetList: {
-      immediate: true,
-      handler(val) {
-        if (val && val.length) {
-          this.allAssetsList = [...val];
-          this.filter(this.searchVal);
+  emits: ["update:inputVal", "selectAsset", "max", "customerFocus"],
+  setup(props, { emit }) {
+    const { takerAddress } = useStoreState();
+    const amount = ref("");
+    watch(
+      () => props.inputVal,
+      val => {
+        amount.value = val || "";
+      }
+    );
+
+    const allAssetsList = computed<AssetItem[]>(() => {
+      return _.cloneDeep(props.assetList);
+    });
+
+    const searchVal = ref("");
+    const list = computed(() => {
+      if (!searchVal.value) {
+        return allAssetsList.value.filter(v => v);
+      } else {
+        if (props.showAmount) {
+          return allAssetsList.value.filter(v => {
+            return (
+              v.assetKey.indexOf(searchVal.value) > -1 ||
+              v.symbol.toUpperCase().indexOf(searchVal.value.toUpperCase()) > -1
+            );
+          });
+        } else {
+          return allAssetsList.value.filter(v => {
+            const contractAddress = v.contractAddress as string;
+            return (
+              contractAddress.indexOf(searchVal.value) > -1 ||
+              v.symbol.toUpperCase().indexOf(searchVal.value.toUpperCase()) > -1
+            );
+          });
         }
       }
-    },
-    selectedAsset: {
-      immediate: true,
-      handler(val) {
-        this.chooseAsset = val;
-      }
-    }
-  },
-  computed: {
-    takerAddress() {
-      return this.$store.getters.takerAddress;
-    }
-  },
-  mounted() {
-    // this.allAssetsList = [...this.assetList];
-  },
-  methods: {
-    changeInput(val) {
+    });
+
+    const showDialog = ref(false);
+
+    const chooseAsset = ref(props.selectedAsset);
+
+    function changeInput(val: string) {
       // this.amount = val;
-      let decimals = this.chooseAsset?.decimals || 0;
-      let patrn = "";
+      const decimals = chooseAsset.value.decimals || 0;
+      let reg: RegExp;
       if (!decimals) {
-        patrn = new RegExp("^([1-9][\\d]*|0)(\\.[\\d]*)?$|(^\\.[\\d]*$)");
+        reg = new RegExp("^([1-9][\\d]*|0)(\\.[\\d]*)?$|(^\\.[\\d]*$)");
       } else {
-        patrn = new RegExp(
+        reg = new RegExp(
           "^([1-9][\\d]*|0)(\\.[\\d]{0," +
             decimals +
             "})?$|(^\\.[\\d]{0," +
@@ -130,49 +140,41 @@ export default {
           // "^([1-9][\\d]{0,20}|0)(\\.[\\d]{0," + decimals + "})?$"
         );
       }
-      if (patrn.exec(val) || val === "") {
-        this.$emit("update:inputVal", val);
+      if (reg.exec(val) || val === "") {
+        emit("update:inputVal", val);
       }
-    },
-    filter(str) {
-      this.searchVal = str;
-      if (!str) {
-        this.list = this.allAssetsList.filter(v => v);
-      } else {
-        if (this.showAmount) {
-          this.list = this.allAssetsList.filter(v => {
-            return (
-              v.assetKey.indexOf(str) > -1 ||
-              v.symbol.toUpperCase().indexOf(str.toUpperCase()) > -1
-            );
-          });
-        } else {
-          this.list = this.allAssetsList.filter(v => {
-            return (
-              v.contractAddress.indexOf(str) > -1 ||
-              v.symbol.toUpperCase().indexOf(str.toUpperCase()) > -1
-            );
-          });
-        }
-      }
-    },
-    changeSelect(asset) {
-      if (!asset) return;
-      this.$emit("selectAsset", asset);
-      this.chooseAsset = asset;
-      this.showDialog = false;
-    },
-    max() {
-      this.$emit("max");
-    },
-    customerFocus() {
-      this.$emit("customerFocus");
-    },
-    superLong(str, len = 6) {
-      return superLong(str, len);
     }
+
+    function filter(str: string) {
+      searchVal.value = str;
+    }
+    function changeSelect(asset: AssetItem) {
+      if (!asset) return;
+      emit("selectAsset", asset);
+      chooseAsset.value = asset;
+      showDialog.value = false;
+    }
+    function max() {
+      emit("max");
+    }
+    function customerFocus() {
+      emit("customerFocus");
+    }
+    return {
+      takerAddress,
+      amount,
+      list,
+      showDialog,
+      searchVal,
+      filter,
+      changeInput,
+      changeSelect,
+      max,
+      customerFocus,
+      superLong: (str: string, len = 6) => superLong(str, len)
+    };
   }
-};
+});
 </script>
 
 <style lang="scss" scoped>

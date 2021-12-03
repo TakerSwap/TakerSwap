@@ -50,10 +50,12 @@
   </el-dialog>
 </template>
 
-<script>
-import { defineComponent, ref, watch, computed } from "vue";
+<script lang="ts">
+import { defineComponent, ref, watch, computed, PropType } from "vue";
 import { superLong } from "@/utils/util";
 import SymbolIcon from "@/components/SymbolIcon.vue";
+
+import { AssetItem } from "@/store/types";
 
 export default defineComponent({
   name: "AssetsDialog",
@@ -63,7 +65,7 @@ export default defineComponent({
   props: {
     showDialog: Boolean,
     assetList: {
-      type: Array,
+      type: Array as PropType<AssetItem[]>,
       default: () => []
     },
     showAmount: {
@@ -74,7 +76,7 @@ export default defineComponent({
       type: Boolean
     },
     selectedAsset: {
-      type: Object,
+      type: Object as PropType<AssetItem>,
       default: () => null
     },
     hideSearchInput: {
@@ -101,7 +103,7 @@ export default defineComponent({
       }
     );
 
-    function changeSelect(asset) {
+    function changeSelect(asset: AssetItem) {
       emit("changeSelect", asset);
     }
 

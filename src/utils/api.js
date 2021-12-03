@@ -508,7 +508,7 @@ export class ETransfer {
     let balancePromise = contract.balanceOf(address);
     return balancePromise
       .then(balance => {
-        console.log(balance, 123456);
+        // console.log(balance, 123456);
         return ethers.utils.formatUnits(balance, tokenDecimals);
       })
       .catch(e => {

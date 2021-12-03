@@ -110,7 +110,12 @@
 
 <script lang="ts">
 import { defineComponent, ref, watch, computed } from "vue";
-import { superLong, getCurrentAccount, _networkInfo, isNULSOrNERVE } from "@/utils/util";
+import {
+  superLong,
+  getCurrentAccount,
+  _networkInfo,
+  isNULSOrNERVE
+} from "@/utils/util";
 import useEthereum, { providerList } from "@/hooks/useEthereum";
 import { useRouter, useRoute } from "vue-router";
 import { useStore } from "vuex";
@@ -215,7 +220,7 @@ export default defineComponent({
       }
     });
 
-    const authRef = ref(null);
+    const authRef = ref<InstanceType<typeof AuthButton>>();
     async function derivedAddress() {
       // @ts-ignore
       const result = await authRef.value.derivedAddress();

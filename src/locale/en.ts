@@ -81,7 +81,8 @@ const en = {
     transfer19: "Amount",
     transfer20: "Amount",
     transfer21: "Ethereum",
-    transfer22: "Use other asset"
+    transfer22: "Use other asset",
+    transfer23: "Broadcast tx failed"
   },
   trading: {
     trading1: "Order History",
@@ -103,7 +104,8 @@ const en = {
     trading17: "Insufficient Liquidity",
     trading18: "Confirmed",
     trading19: "Swap Anyway",
-    trading20: "Price Impact Too High"
+    trading20: "Price Impact Too High",
+    trading21: "Swap Failed"
   },
   liquidity: {
     liquidity1: "Liquidity",

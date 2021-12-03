@@ -81,7 +81,8 @@ const cn = {
     transfer19: "转账金额",
     transfer20: "提现金额",
     transfer21: "以太坊",
-    transfer22: "使用其他资产"
+    transfer22: "使用其他资产",
+    transfer23: "广播交易失败"
   },
   trading: {
     trading1: "订单历史",
@@ -103,7 +104,8 @@ const cn = {
     trading17: "交易流动性不足",
     trading18: "已确认",
     trading19: "仍然兑换",
-    trading20: "价格影响很大"
+    trading20: "价格影响很大",
+    trading21: "兑换失败"
   },
   liquidity: {
     liquidity1: "流动性",

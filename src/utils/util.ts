@@ -7,6 +7,7 @@ import ethLogo from "@/assets/img/chainLogo/ETH.png";
 import bscLogo from "@/assets/img/chainLogo/BSC.svg";
 import nulsLogo from "@/assets/img/chainLogo/NULS.png";
 import nerveLogo from "@/assets/img/chainLogo/NERVE.png";
+import {AssetItem, HeterogeneousInfo} from "@/store/types";
 
 interface Obj {
   [key: string]: unknown;
@@ -413,7 +414,7 @@ export function formatFloat(num: string, digit: number) {
 // 保留有效小数位数&小数末位进1
 export function floatToCeil(num: string, decimal = 6) {
   // @ts-ignore
-  return Math.ceil(num * Math.pow(10, decimal)) / Math.pow(10, decimal);
+  return Math.ceil(num * Math.pow(10, decimal)) / Math.pow(10, decimal) + "";
 }
 
 export function isNULSOrNERVE(address: string | null) {
@@ -427,4 +428,19 @@ export function isNULSOrNERVE(address: string | null) {
   } else {
     return false;
   }
+}
+
+// 检查资产是否能在L1-L2间跨链
+export function checkCanToL1(asset: AssetItem): boolean {
+  if (!asset.heterogeneousList) return false;
+  return !!asset.heterogeneousList.find((v: HeterogeneousInfo) => {
+    return Object.keys(_networkInfo).find(key => {
+      if (
+        _networkInfo[key].chainId === v.heterogeneousChainId &&
+        _networkInfo[key].supported
+      ) {
+        return true;
+      }
+    });
+  });
 }

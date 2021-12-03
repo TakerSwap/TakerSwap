@@ -3,33 +3,24 @@
     <div class="top">
       <div class="back"><i class="iconfont icon-fanhui" @click="back"></i></div>
       <div class="tab-wrap">
-        <el-tabs v-model="activeName" @tab-click="handleClick">
-          <el-tab-pane name="first" :disabled="father.disableTx">
+        <el-tabs v-model="activeName">
+          <el-tab-pane :name="TransferType.CrossIn" :disabled="disableTx">
             <template #label>
-              <el-tooltip
-                :content="$t('assets.assets4')"
-                placement="top"
-              >
+              <el-tooltip :content="$t('assets.assets4')" placement="top">
                 <i class="iconfont icon-chongzhidaoL2"></i>
               </el-tooltip>
             </template>
           </el-tab-pane>
-          <el-tab-pane name="second">
+          <el-tab-pane :name="TransferType.General">
             <template #label>
-              <el-tooltip
-                :content="$t('assets.assets5')"
-                placement="top"
-              >
+              <el-tooltip :content="$t('assets.assets5')" placement="top">
                 <i class="iconfont icon-L2zhuanzhang"></i>
               </el-tooltip>
             </template>
           </el-tab-pane>
-          <el-tab-pane name="third" :disabled="father.disableTx">
+          <el-tab-pane :name="TransferType.Withdrawal" :disabled="disableTx">
             <template #label>
-              <el-tooltip
-                :content="$t('assets.assets6')"
-                placement="top"
-              >
+              <el-tooltip :content="$t('assets.assets6')" placement="top">
                 <i class="iconfont icon-tixiandaoL1"></i>
               </el-tooltip>
             </template>
@@ -39,26 +30,29 @@
     </div>
     <div class="bottom">
       <cross-in
-        v-show="activeName === 'first'"
+        v-show="activeName === TransferType.CrossIn"
         :transferAsset="transferAsset"
       ></cross-in>
       <common-transfer
-        v-show="activeName === 'second'"
+        v-show="activeName === TransferType.General"
         :transferAsset="transferAsset"
       ></common-transfer>
       <withdrawal
-        v-show="activeName === 'third'"
+        v-show="activeName === TransferType.Withdrawal"
         :transferAsset="transferAsset"
       ></withdrawal>
     </div>
   </div>
 </template>
 
-<script>
-import { defineComponent, ref, watch } from "vue";
+<script lang="ts">
+import { defineComponent, ref, watch, PropType } from "vue";
 import CrossIn from "./CrossIn.vue";
 import CommonTransfer from "./CommonTransfer.vue";
 import Withdrawal from "./Withdrawal.vue";
+
+import { TransferType, AssetItemType } from "../types";
+
 export default defineComponent({
   name: "transfer",
   components: {
@@ -66,35 +60,34 @@ export default defineComponent({
     CommonTransfer,
     Withdrawal
   },
-  inject: ["father"],
   props: {
     showTransfer: Boolean,
-    currentTab: String,
-    transferAsset: Object
+    currentTab: {
+      type: String as PropType<TransferType>,
+      default: TransferType.General
+    },
+    transferAsset: {
+      type: Object as PropType<AssetItemType>
+    },
+    disableTx: Boolean
   },
   setup(props, { emit }) {
-    const crossInVal = ref("");
-    const activeName = ref("first");
+    const activeName = ref<TransferType>(props.currentTab);
     watch(
       () => props.currentTab,
       val => {
-        activeName.value = val;
-      },
-      {
-        immediate: true
+        if (val) {
+          activeName.value = val;
+        }
       }
     );
     function back() {
       emit("update:show", false);
     }
-    function handleClick(index) {
-      console.log(index);
-    }
     return {
       activeName,
-      crossInVal,
-      handleClick,
-      back
+      back,
+      TransferType
     };
   }
 });
@@ -106,7 +99,7 @@ export default defineComponent({
   max-width: 470px;
   margin: 0 auto;
   border-radius: 20px;
-  background-color: #2A2A56;
+  background-color: #2a2a56;
   .top {
     height: 173px;
     padding: 40px;

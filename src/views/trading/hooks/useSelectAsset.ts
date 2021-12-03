@@ -1,12 +1,17 @@
 import { reactive, ref } from "vue";
 import useStoreState from "@/hooks/useStoreState";
-import { AssetItem } from "@/store";
 import nerve from "nerve-sdk-js";
 import config from "@/config";
 import { userTradeHistoryPage } from "@/service/api";
 import dayjs from "dayjs";
 import { divisionDecimals } from "@/utils/util";
-import { SwapSymbol, OrderItem, Pager, DefaultAsset } from "../types";
+import {
+  SwapSymbol,
+  OrderItem,
+  Pager,
+  DefaultAsset,
+  AssetItem
+} from "../types";
 
 export default function useSelectAsset() {
   const { takerAddress } = useStoreState();

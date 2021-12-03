@@ -18,7 +18,6 @@
         :icon="transferAsset.symbol"
         :assetList="assetsList"
         :balance="balance"
-        :errorTip="amountErrorTip"
         :selectedAsset="transferAsset"
         @selectAsset="selectAsset"
         @max="max"
@@ -40,7 +39,7 @@
     </div>
     <div class="confirm-wrap">
       <el-button type="primary" @click="sendTx" :disabled="disableTransfer">
-        {{ $t("transfer.transfer11") }}
+        {{ amountErrorTip || $t("transfer.transfer11") }}
       </el-button>
     </div>
     <AssetsDialog
@@ -55,168 +54,143 @@
   </div>
 </template>
 
-<script>
-import { defineComponent } from "vue";
+<script lang="ts">
+import { defineComponent, ref, computed, watch, inject, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
+import { useToast } from "vue-toastification";
 import CustomInput from "@/components/CustomInput.vue";
-import AssetsDialog from "@/components/AssetsDialog";
+import AssetsDialog from "@/components/AssetsDialog.vue";
 import {
   superLong,
   Minus,
   timesDecimals,
   _networkInfo,
-  divisionDecimals,
-  Times,
   Plus,
   floatToCeil
 } from "@/utils/util";
+// @ts-ignore
 import { NTransfer, ETransfer, getSymbolUSD } from "@/utils/api";
 import config from "@/config";
+import useBroadcastNerveHex from "@/hooks/useBroadcastNerveHex";
+
+import { rootCmpKey, RootComponent, AssetItemType } from "../types";
+import {HeterogeneousInfo} from "@/store/types";
+
 export default defineComponent({
   name: "withdrawal",
-  inject: ["father"],
   components: {
     CustomInput,
     AssetsDialog
   },
-  data() {
-    this.timer = null;
-    return {
-      loading: false,
-      assetsList: [],
-      amount: "",
-      balance: "",
-      transferAsset: {},
-      amountErrorTip: "",
-      fee: 0,
-      feeSymbol: "",
-      showFeeDialog: false,
-      selectedFeeAsset: {}, // 手续费资产信息--L1网络在nerve上的主资产
-      supportedFeeAssets: [] // 可充当提现手续费的资产
-    };
-  },
-  watch: {
-    amount(val) {
-      if (val) {
-        this.validateAmount();
-      }
-    },
-    "father.crossInOutSymbol": {
-      deep: true,
-      handler() {
-        this.filterAssets();
-        // this.selectAsset(this.father.transferAsset);
-        this.balance = this.assetsList.find(
-          v => v.assetKey === this.transferAsset.assetKey
-        )?.available;
-      }
-    }
-  },
-  computed: {
-    disableTransfer() {
-      return !!(
-        !Number(this.amount) ||
-        !Number(this.balance) ||
-        !Number(this.fee) ||
-        this.amountErrorTip ||
-        this.father.disableTx
-      );
-    }
-  },
-  mounted() {
-    // console.log(this.father, "===commontransfer===");
-    // console.log(this.$store.state.addressInfo, "===addressInfo===");
-    this.filterAssets();
-    const { transferAsset, network } = this.father;
-    const supportedFeeAssets = [];
-    const htgMainAsset = Object.values(config.htgMainAsset);
-    this.father.allAssetsList.map(v => {
-      htgMainAsset.map(item => {
-        if (item.chainId === v.chainId && item.assetId === v.assetId) {
-          supportedFeeAssets.push(v);
-        }
-      });
-    });
-    this.selectedFeeAsset = config.htgMainAsset[network];
-    this.feeSymbol = _networkInfo[network].mainAsset;
-    this.supportedFeeAssets = supportedFeeAssets;
-    this.selectAsset(transferAsset);
-  },
-  beforeUnmount() {
-    if (this.timer) clearInterval(this.timer);
-  },
-  methods: {
-    filterAssets() {
-      // console.log(123465,this.father);
-      const chain = _networkInfo[this.father.network];
-      if (this.father.disableTx || !chain) return;
-      this.assetsList = this.father.crossInOutSymbol.filter(v => {
+  setup() {
+    const father = inject(rootCmpKey, {} as RootComponent);
+    const { t } = useI18n();
+    const toast = useToast();
+
+    const loading = ref(false);
+    const amount = ref("");
+
+    const assetsList = computed<AssetItemType[]>(() => {
+      const chain = _networkInfo[father.network];
+      return father.crossInOutSymbol.filter(v => {
         return v.heterogeneousList?.filter(item => {
           return item.heterogeneousChainId === chain.chainId;
         });
       });
-    },
-    selectAsset(asset) {
-      if (this.father.disableTx) return;
-      this.fee = 0;
-      this.amount = "";
-      this.balance = "";
-      this.heterogeneousInfo = {}; // 异构链信息
+    });
+
+    const transferAsset = ref(father.transferAsset);
+    const balance = computed(() => {
+      const asset = assetsList.value.find(asset => {
+        return asset.assetKey === transferAsset.value.assetKey;
+      });
+      return asset ? asset.available : "";
+    });
+
+    const fee = ref("");
+    const amountErrorTip = ref("");
+    const disableTransfer = computed(() => {
+      return !!(
+        !fee.value ||
+        !amount.value ||
+        !balance.value ||
+        amountErrorTip.value ||
+        father.disableTx
+      );
+    });
+    const feeSymbol = ref("");
+    const showFeeDialog = ref(false);
+
+    const selectedFeeAsset = ref<AssetItemType>({} as AssetItemType); // 手续费资产信息--L1网络在nerve上的主资产
+    const supportedFeeAssets = ref<AssetItemType[]>([]); // 可充当提现手续费的资产
+
+    onMounted(() => {
+      if (father.disableTx) return;
+      getFeeAssetInfo();
+      selectAsset(transferAsset.value);
+    });
+
+    function getFeeAssetInfo() {
+      const { network } = father;
+      const feeAssets: AssetItemType[] = [];
+      const htgMainAsset = Object.values(config.htgMainAsset);
+      father.allAssetsList.map(v => {
+        htgMainAsset.map(item => {
+          if (item.chainId === v.chainId && item.assetId === v.assetId) {
+            feeAssets.push(v);
+          }
+        });
+      });
+      const defaultFeeAsset = config.htgMainAsset[network];
+      selectedFeeAsset.value = father.allAssetsList.find(asset => {
+        return (
+          asset.chainId === defaultFeeAsset.chainId &&
+          asset.assetId === defaultFeeAsset.assetId
+        );
+      }) as AssetItemType;
+      feeSymbol.value = _networkInfo[network].mainAsset;
+      supportedFeeAssets.value = feeAssets;
+    }
+
+    // 手续费与交易资产是否是同一个资产
+    const FeeAsset_TransferAsset_IsSame = computed(() => {
+      // if (!selectedFeeAsset.value || !transferAsset.value) return false;
+      return (
+        selectedFeeAsset.value.chainId === transferAsset.value.chainId &&
+        selectedFeeAsset.value.assetId === transferAsset.value.assetId
+      );
+    });
+
+    let heterogeneousInfo: HeterogeneousInfo; // 异构链信息
+    // 选择交易资产
+    function selectAsset(asset: AssetItemType) {
+      fee.value = "";
+      amount.value = "";
       const heterogeneousList = asset.heterogeneousList || [];
       // 目标异构链ID
-      const heterogeneousChainId = _networkInfo[this.father.network]?.chainId;
+      const heterogeneousChainId = _networkInfo[father.network]?.chainId;
       if (!heterogeneousChainId) return;
-      const heterogeneousInfo = heterogeneousList.find(
+      heterogeneousInfo = heterogeneousList.find(
         v => v.heterogeneousChainId === heterogeneousChainId
-      );
-      this.heterogeneousInfo = heterogeneousInfo;
-      // console.log(heterogeneousInfo, 123456);
+      ) as HeterogeneousInfo;
+
       if (heterogeneousInfo) {
-        this.transferAsset = asset;
-        this.balance = this.transferAsset.available;
-        this.heterogeneousInfo = heterogeneousInfo;
-        if (this.timer) clearInterval(this.timer);
-        this.getCrossOutFee();
-        /*this.timer = setInterval(() => {
-          this.getCrossOutFee();
-        }, 10000);*/
+        transferAsset.value = asset;
+        getCrossOutFee();
       } else {
-        this.transferAsset = {};
+        transferAsset.value = {} as AssetItemType;
       }
-    },
-    validateAmount() {
-      const { chainId, assetId } = this.selectedFeeAsset;
-      const L1MainAssetBalance = this.father.allAssetsList.find(v => {
-        return v.chainId === chainId && v.assetId === assetId;
-      }).available;
-      const isL1MainAsset =
-        this.transferAsset.chainId === chainId &&
-        this.transferAsset.assetId === assetId;
-      if (
-        !Number(this.balance) ||
-        Minus(this.balance, this.amount) < 0 ||
-        (isL1MainAsset && Minus(this.balance, Plus(this.amount, this.fee)) < 0)
-      ) {
-        this.amountErrorTip = this.$t("transfer.transfer15");
-      } else if (Minus(L1MainAssetBalance, this.fee) < 0) {
-        this.amountErrorTip = this.$t("transfer.transfer18");
-      } else {
-        this.amountErrorTip = "";
-      }
-    },
-    async changeFeeAsset(asset) {
-      this.showFeeDialog = false;
-      this.selectedFeeAsset = asset;
-      this.feeSymbol = this.selectedFeeAsset.symbol;
-      this.fee = 0;
-      await this.getCrossOutFee();
-      this.validateAmount();
-    },
-    async getCrossOutFee() {
-      const withdrawalChain = this.father.network;
-      const feeChain = this.selectedFeeAsset.originNetwork;
-      // console.log(feeChain, 465465)
-      const { chainId, assetId, decimals } = this.selectedFeeAsset;
-      const { isToken } = this.heterogeneousInfo;
+    }
+
+    async function getCrossOutFee() {
+      const withdrawalChain = father.network;
+      const {
+        chainId,
+        assetId,
+        decimals,
+        originNetwork: feeChain
+      } = selectedFeeAsset.value;
+      const { isToken } = heterogeneousInfo;
       const feeIsNVT = chainId === config.chainId && assetId === config.assetId;
       const transfer = new ETransfer(withdrawalChain);
       let res = "";
@@ -238,11 +212,11 @@ export default defineComponent({
           chainId,
           assetId
         });
-        const mainAsset = this.supportedFeeAssets.find(
-          v => v.symbol === this.heterogeneousInfo.chainName
-        );
+        const mainAsset = supportedFeeAssets.value.find(
+          v => v.symbol === heterogeneousInfo.chainName
+        ) as AssetItemType;
         const L1MainAssetUSD = await getSymbolUSD({
-          chaiId: mainAsset.chaiId,
+          chainId: mainAsset.chainId,
           assetId: mainAsset.assetId
         });
         if (withdrawalChain === "TRON") {
@@ -265,88 +239,123 @@ export default defineComponent({
           );
         }
       }
-      this.fee = floatToCeil(res, 6);
-    },
-    max() {
-      if (!this.balance || !Number(this.balance)) return;
-      const isL1MainAsset =
-        this.transferAsset.chainId === this.selectedFeeAsset.chainId &&
-        this.transferAsset.assetId === this.selectedFeeAsset.assetId;
-      if (isL1MainAsset) {
-        if (!this.fee) return;
-        if (Minus(this.balance, this.fee).toString() > 0) {
-          this.amount = Minus(this.balance, this.fee).toString();
+      fee.value = floatToCeil(res, 6);
+    }
+    async function changeFeeAsset(asset: AssetItemType) {
+      showFeeDialog.value = false;
+      selectedFeeAsset.value = asset;
+      feeSymbol.value = asset.symbol;
+      fee.value = "";
+      await getCrossOutFee();
+      validateAmount();
+    }
+
+    function validateAmount() {
+      const { available } = selectedFeeAsset.value;
+      if (
+        !Number(balance.value) ||
+        Minus(balance.value, amount.value).toNumber() < 0 ||
+        (FeeAsset_TransferAsset_IsSame.value &&
+          Minus(balance.value, Plus(amount.value, fee.value)).toNumber() < 0)
+      ) {
+        amountErrorTip.value = t("transfer.transfer15");
+      } else if (Minus(available, fee.value).toNumber() < 0) {
+        amountErrorTip.value = t("transfer.transfer18");
+      } else {
+        amountErrorTip.value = "";
+      }
+    }
+
+    watch(
+      () => amount.value,
+      val => {
+        if (val) {
+          validateAmount();
+        }
+      }
+    );
+
+    function max() {
+      if (!balance.value || !Number(balance.value)) return;
+      if (FeeAsset_TransferAsset_IsSame.value) {
+        if (!fee.value) return;
+        if (Minus(balance.value, fee.value).toNumber() > 0) {
+          amount.value = Minus(balance.value, fee.value).toString();
         } else {
-          this.amount = this.balance;
+          amount.value = balance.value;
         }
       } else {
-        this.amount = this.balance;
+        amount.value = balance.value;
       }
-    },
-    async sendTx() {
-      this.loading = true;
+    }
+
+    const { handleTxInfo } = useBroadcastNerveHex();
+    async function sendTx() {
+      loading.value = true;
       try {
-        const { chainId, assetId, decimals } = this.transferAsset;
-        const { takerAddress, address } = this.father;
-        const withdrawalFee = timesDecimals(this.fee, this.selectedFeeAsset.decimals);
+        const { chainId, assetId, decimals } = transferAsset.value;
+        const { takerAddress, address } = father;
+        const {
+          chainId: feeChainId,
+          assetId: feeAssetId,
+          decimals: feeDecimals
+        } = selectedFeeAsset.value;
         const transferInfo = {
           from: takerAddress,
           assetsChainId: chainId,
           assetsId: assetId,
-          amount: timesDecimals(this.amount, decimals),
+          amount: timesDecimals(amount.value, decimals),
           fee: 0,
-          withdrawalFee,
+          withdrawalFee: timesDecimals(fee.value, feeDecimals),
           fee_asset: {
-            chainId: this.selectedFeeAsset.chainId,
-            assetId: this.selectedFeeAsset.assetId
+            chainId: feeChainId,
+            assetId: feeAssetId
           }
         };
-
-        console.log(transferInfo);
-        const transfer = new NTransfer({
-          chain: "NERVE",
-          type: 43
-        });
-        const inputOuput = await transfer.WithdrawalTransaction(transferInfo);
-        // console.log(inputOuput, 456456465)
-        const addressInfo = this.$store.state.addressInfo;
+        console.log(transferInfo, "===transferInfo===");
         const txData = {
           heterogeneousAddress: address,
-          heterogeneousChainId: this.heterogeneousInfo.heterogeneousChainId
+          heterogeneousChainId: heterogeneousInfo.heterogeneousChainId
         };
-        const data = {
-          inputs: inputOuput.inputs,
-          outputs: inputOuput.outputs,
-          txData,
-          pub: addressInfo.pub,
-          signAddress: address
-        };
-        const txHex = await transfer.getTxHex(data);
-        console.log(txHex, 9999);
-        const result = await transfer.broadcastHex(txHex);
+        const result: any = await handleTxInfo(transferInfo, 43, txData);
         if (result && result.hash) {
-          this.amount = "";
-          this.$toast(this.$t("transfer.transfer14"));
+          amount.value = "";
+          toast.success(t("transfer.transfer14"));
         } else {
-          this.$toast("Broadcast tx failed", {
-            type: "error"
-          });
+          toast.error(t("transfer.transfer23"));
         }
       } catch (e) {
-        console.log(e, "common-transfer-error");
-        this.$toast(e.message || e, {
-          type: "error"
-        });
+        console.log(e, "withdrawal-error");
+        toast.error(e.message || e);
       }
-      this.loading = false;
-    },
-    superLong(str, len = 6) {
-      return superLong(str, len);
-    },
-    openUrl(address, network) {
+      loading.value = false;
+    }
+    function openUrl(address: string, network: string) {
       const { origin } = _networkInfo[network];
       window.open(origin + "/address/" + address);
     }
+
+    return {
+      father,
+      loading,
+      amount,
+      balance,
+      fee,
+      amountErrorTip,
+      disableTransfer,
+      assetsList,
+      transferAsset,
+      feeSymbol,
+      showFeeDialog,
+      selectedFeeAsset,
+      supportedFeeAssets,
+      selectAsset,
+      changeFeeAsset,
+      max,
+      sendTx,
+      superLong: (str: string, len = 6) => superLong(str, len),
+      openUrl
+    };
   }
 });
 </script>

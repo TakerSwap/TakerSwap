@@ -20,7 +20,7 @@
             ></i>
           </div>
           <el-table
-            :data="tableData"
+            :data="selectAssets"
             height="480"
             class="show_table"
             v-loading="loading"
@@ -88,37 +88,37 @@
                   <el-tooltip
                     :content="$t('assets.assets4')"
                     placement="top"
-                    v-if="isShowCrossHandle(scope.row)"
+                    v-if="scope.row.canToL1"
                   >
                     <i
                       class="iconfont icon-chongzhidaoL2"
                       :class="{ disable: disableTx }"
-                      @click="transfer(scope.row, 'crossIn')"
+                      @click="transfer(scope.row, TransferType.CrossIn)"
                     ></i>
                   </el-tooltip>
                   <el-divider
                     direction="vertical"
-                    v-if="isShowCrossHandle(scope.row)"
+                    v-if="scope.row.canToL1"
                   ></el-divider>
                   <el-tooltip :content="$t('assets.assets5')" placement="top">
                     <i
                       class="iconfont icon-L2zhuanzhang"
-                      @click="transfer(scope.row, 'general')"
+                      @click="transfer(scope.row, TransferType.General)"
                     ></i>
                   </el-tooltip>
                   <el-divider
                     direction="vertical"
-                    v-if="isShowCrossHandle(scope.row)"
+                    v-if="scope.row.canToL1"
                   ></el-divider>
                   <el-tooltip
                     :content="$t('assets.assets6')"
                     placement="top"
-                    v-if="isShowCrossHandle(scope.row)"
+                    v-if="scope.row.canToL1"
                   >
                     <i
                       class="iconfont icon-tixiandaoL1"
                       :class="{ disable: disableTx }"
-                      @click="transfer(scope.row, 'withdrawal')"
+                      @click="transfer(scope.row, TransferType.Withdrawal)"
                     ></i>
                   </el-tooltip>
                 </div>
@@ -142,9 +142,9 @@
       <el-empty
         description="No Data"
         v-loading="loading"
-        v-if="!tableData.length"
+        v-if="!selectAssets.length"
       />
-      <div v-for="(item, index) in tableData" v-else :key="index">
+      <div v-for="(item, index) in selectAssets" v-else :key="index">
         <div class="p-24 asset-cont-wrap" @click="assetClick(item)">
           <div class="asset-cont">
             <div class="asset-item">
@@ -203,19 +203,19 @@
             <div class="btn-cont">
               <div
                 class="btn"
-                @click="transfer(item, 'crossIn')"
-                v-if="isShowCrossHandle(item)"
+                @click="transfer(item, TransferType.CrossIn)"
+                v-if="item.canToL1"
                 :class="{ btn_disable: disableTx }"
               >
                 {{ $t("assets.assets4") }}
               </div>
-              <div class="btn" @click="transfer(item, 'general')">
+              <div class="btn" @click="transfer(item, TransferType.General)">
                 {{ $t("assets.assets5") }}
               </div>
               <div
                 class="btn"
-                @click="transfer(item, 'withdrawal')"
-                v-if="isShowCrossHandle(item)"
+                @click="transfer(item, TransferType.Withdrawal)"
+                v-if="item.canToL1"
                 :class="{ btn_disable: disableTx }"
               >
                 {{ $t("assets.assets6") }}
@@ -229,33 +229,39 @@
       v-model:showAssetManage="showAssetManage"
       :assetList="allAssetsList"
       :selectAssets="selectAssets"
-      @addAssets="filterAssets"
+      @addAssets="addAssets"
     ></assets-manage>
     <transfer
       v-if="showTransfer"
       v-model:currentTab="currentTab"
       v-model:show="showTransfer"
+      :disableTx="disableTx"
     />
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import {
   defineComponent,
-  ref,
-  watch,
-  computed,
+  getCurrentInstance,
   onMounted,
   provide,
-  getCurrentInstance
+  ref,
+  reactive
 } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { superLong, _networkInfo } from "@/utils/util";
+import { useStore } from "@/store";
 import SymbolIcon from "@/components/SymbolIcon.vue";
 import AssetsManage from "./AssetsManage.vue";
 import Transfer from "./transfer/index.vue";
 import CollapseTransition from "@/components/CollapseTransition.vue";
+import { superLong } from "@/utils/util";
+import useStoreState from "@/hooks/useStoreState";
+import useAssetsList from "./hooks/useAssetsList";
+
+import { AssetItemType, rootCmpKey, TransferType } from "./types";
+import storage from "@/utils/storage";
+import { Account, HeterogeneousInfo } from "@/store/types";
 
 export default defineComponent({
   name: "assets",
@@ -265,371 +271,124 @@ export default defineComponent({
     Transfer,
     CollapseTransition
   },
-  provide() {
-    return {
-      father: this
-    };
-  },
   setup() {
     const internalInstance = getCurrentInstance();
-    provide("father", internalInstance);
+    // provide<InstanceType<typeof internalInstance?.proxy>>("father", internalInstance?.proxy);
+    provide("father", internalInstance?.proxy);
+
     const store = useStore();
+
+    const {
+      takerAddress,
+      chain: network,
+      wrongChain: disableTx,
+      addressInfo: currentAccount,
+      currentAddress: address
+    } = useStoreState();
+
     const router = useRouter();
-    const loading = ref(true);
-    const loaded = ref(false);
-    const showAssetManage = ref(false);
-    let sortDataByValue = [];
-    const allAssetsList = ref([]); // L2 所有资产
-    const selectAssets = ref([]); // 勾选显示的资产
-    const crossInOutSymbol = ref([]); // 支持Ethereum转入/转出的资产
-    const showTransfer = ref(false);
-    const currentTab = ref("first");
-    const tableData = ref([]);
-    const transferAsset = ref({});
     onMounted(() => {
-      if (!store.getters.takerAddress) {
+      if (!takerAddress.value) {
         router.push("/");
       }
     });
-    const network = computed(() => {
-      return store.getters.chain;
-    });
-    const disableTx = computed(() => {
-      return store.getters.wrongChain;
-    });
-    const currentAccount = computed(() => {
-      return store.state.addressInfo;
-    });
-    const address = computed(() => {
-      return store.getters.currentAddress;
-    });
-    const takerAddress = computed(() => {
-      return store.getters.takerAddress;
-    });
-    watch(
-      () => store.state.assetList,
-      val => {
-        if (val && val.length) {
-          getList(val);
-        } else {
-          getList([]);
-        }
-      },
-      {
-        immediate: true
-        // deep: true
-      }
-    );
-    function getList(list) {
-      loading.value = !loaded.value;
-      loading.value = false;
-      list.map(v => {
-        const exist = allAssetsList.value.find(
-          item => v.assetKey === item.assetKey
-        );
-        v.showDetail = exist ? exist.showDetail : false;
-      });
-      sortDataByValue = [...list].sort((a, b) => {
-        return a.valuation - b.valuation > 0 ? -1 : 1;
-      });
-      crossInOutSymbol.value = [...list].filter(item => {
-        if (!item.heterogeneousList) {
-          return false;
-        } else {
-          let supportedChain = false;
-          item.heterogeneousList.map(v => {
-            Object.keys(_networkInfo).map(key => {
-              if (
-                _networkInfo[key].chainId === v.heterogeneousChainId &&
-                key === network.value
-              ) {
-                supportedChain = true;
-              }
-            });
-          });
-          return supportedChain;
-        }
-      });
-      allAssetsList.value = list;
-      filterAssets();
-      loaded.value = true;
-    }
-    function filterAssets() {
-      let result = [];
-      if (currentAccount.value.visiableAssets) {
-        sortDataByValue.map(v =>
-          currentAccount.value.visiableAssets.map(item => {
-            if (item === v.assetKey) {
-              result.push(v);
-            }
-          })
-        );
-      } else {
-        const defaultSymbol = ["ETH", "USDT", "USDC"];
-        result = sortDataByValue.filter(
-          v => defaultSymbol.indexOf(v.symbol) > -1
-        );
-      }
-      selectAssets.value = result;
-      tableData.value = result;
-    }
-    function transfer(asset, type) {
-      if (type !== "general" && disableTx.value) return;
-      if (type === "crossIn") {
+
+    const {
+      loading,
+      allAssetsList,
+      selectAssets,
+      crossInOutSymbol,
+      filterAssets,
+      assetClick
+    } = useAssetsList();
+
+    const showAssetManage = ref(false); // 资产管理弹窗
+
+    // 显示交易tab
+    const currentTab = ref<TransferType>(TransferType.General);
+    const showTransfer = ref(false);
+    const transferAsset = ref<AssetItemType>({} as AssetItemType); // 当前交易的资产
+    function transfer(asset: AssetItemType, type: TransferType) {
+      if (type !== TransferType.General && disableTx.value) return;
+      currentTab.value = type;
+      /*if (type === TransferType.CrossIn) {
         // L1到L2
-        currentTab.value = "first";
-      } else if (type === "withdrawal") {
+        currentTab.value = TransferType.CrossIn;
+      } else if (type === TransferType.Withdrawal) {
         // L2到L1
-        currentTab.value = "third";
+        currentTab.value = TransferType.Withdrawal;
       } else {
         // L2内部转账
-        currentTab.value = "second";
-      }
+        currentTab.value = TransferType.General;
+      }*/
       showTransfer.value = true;
       transferAsset.value = asset;
-      // console.log(this.transferAsset,55)
     }
-    function isShowCrossHandle(item) {
-      if (!item.heterogeneousList) return false;
-      let supportedChain = false;
-      item.heterogeneousList.map(v => {
-        Object.keys(_networkInfo).map(key => {
-          if (
-            _networkInfo[key].chainId === v.heterogeneousChainId &&
-            key === network.value
-          ) {
-            supportedChain = true;
-          }
-        });
-      });
-      return supportedChain;
-    }
-    function assetClick(item) {
-      for (let asset of tableData.value) {
-        if (item.assetKey === asset.assetKey) {
-          item.showDetail = !item.showDetail;
-        } else {
-          asset.showDetail = false;
-        }
-      }
-    }
-    function getContractAddress(heterogeneousList, registerChainId) {
+
+    // 获取资产合约地址
+    function getContractAddress(
+      heterogeneousList: HeterogeneousInfo[],
+      registerChainId: number
+    ): string {
       if (!heterogeneousList || !heterogeneousList.length) {
-        return false;
+        return "";
       }
-      const info = heterogeneousList.filter(
+      const info = heterogeneousList.find(
         v => v.heterogeneousChainId === registerChainId
-      )[0];
-      if (!info) {
-        return false;
-      } else {
-        return info.contractAddress;
-      }
+      );
+      return info ? info.contractAddress : "";
     }
+
+    function addAssets(assets: string[]) {
+      currentAccount.value.visiableAssets = assets;
+      const accountList: Account[] = storage.get("local", "accountList") || [];
+      accountList.map(v => {
+        if (v.pub === currentAccount.value.pub) {
+          v.visiableAssets = assets;
+        }
+      });
+      storage.set("local", "accountList", accountList);
+
+      store.commit("setCurrentAddress", currentAccount);
+      filterAssets();
+    }
+
+    const rootCmp = reactive({
+      takerAddress,
+      address,
+      disableTx,
+      network,
+      transferAsset,
+      crossInOutSymbol,
+      allAssetsList,
+      currentAccount
+    });
+
+    provide(rootCmpKey, rootCmp);
 
     return {
       loading,
-      loaded,
       showAssetManage,
       allAssetsList,
       selectAssets,
       crossInOutSymbol,
       showTransfer,
       currentTab,
-      tableData,
       transferAsset,
       network,
       disableTx,
       currentAccount,
       address,
       takerAddress,
-      filterAssets,
+      addAssets,
       transfer,
-      isShowCrossHandle,
       superLong,
       assetClick,
-      getContractAddress
+      getContractAddress,
+      TransferType
     };
   }
 });
-
-/*export default defineComponent({
-  name: "assets",
-  props: {},
-  components: {
-    SymbolIcon,
-    AssetsManage,
-    Transfer,
-    CollapseTransition
-  },
-  provide() {
-    return {
-      father: this
-    };
-  },
-  watch: {
-    "$store.state.assetList": {
-      immediate: true,
-      // deep: true,
-      handler(val) {
-        if (val && val.length) {
-          this.getList(val);
-        } else {
-          this.getList([]);
-        }
-      }
-    }
-  },
-  computed: {
-    network() {
-      return this.$store.getters.chain;
-    },
-    disableTx() {
-      return this.$store.getters.wrongChain;
-    },
-    currentAccount() {
-      return this.$store.state.addressInfo;
-    },
-    address() {
-      return this.$store.getters.currentAddress;
-    },
-    takerAddress() {
-      return this.$store.getters.takerAddress;
-    }
-  },
-  data() {
-    return {
-      loading: true,
-      showAssetManage: false,
-      selectAssets: [], // 勾选显示的资产
-      allAssetsList: [], // L2 所有资产
-      crossInOutSymbol: [], // 支持Ethereum转入/转出的资产
-      showTransfer: false,
-      currentTab: "first",
-      tableData: [],
-      transferAsset: {},
-      show: false,
-      loaded: false
-    };
-  },
-
-  mounted() {
-    if (!this.$store.getters.takerAddress){
-      this.$router.push("/");
-    }
-  },
-
-  methods: {
-    assetClick(item) {
-      for (let asset of this.tableData) {
-        if (item.assetKey === asset.assetKey) {
-          item.showDetail = !item.showDetail;
-        } else {
-          asset.showDetail = false;
-        }
-      }
-    },
-    async getList(list) {
-      this.loading = !this.loaded;
-      this.loading = false;
-      list.map(v => {
-        const exist = this.allAssetsList.find(
-          item => v.assetKey === item.assetKey
-        );
-        v.showDetail = exist ? exist.showDetail : false;
-      });
-      const sortDataByValue = [...list].sort((a, b) => {
-        return a.valuation - b.valuation > 0 ? -1 : 1;
-      });
-      const crossInOutSymbol = [...list].filter(item => {
-        if (!item.heterogeneousList) {
-          return false;
-        } else {
-          let supportedChain = false;
-          item.heterogeneousList.map(v => {
-            Object.keys(_networkInfo).map(key => {
-              if (_networkInfo[key].chainId === v.heterogeneousChainId && key === this.network) {
-                supportedChain = true;
-              }
-            });
-          });
-          return supportedChain;
-        }
-      });
-      this.sortDataByValue = sortDataByValue;
-      this.allAssetsList = list;
-      this.crossInOutSymbol = crossInOutSymbol;
-      this.filterAssets();
-      this.loaded = true;
-    },
-    //过滤展示资产列表
-    filterAssets() {
-      // console.log(this.sortDataByValue, 66);
-      let result = [];
-      if (this.currentAccount.visiableAssets) {
-        this.sortDataByValue.map(v =>
-          this.currentAccount.visiableAssets.map(item => {
-            if (item === v.assetKey) {
-              result.push(v);
-            }
-          })
-        );
-      } else {
-        const defaultSymbol = ["ETH", "USDT", "USDC"];
-        result = this.sortDataByValue.filter(
-          v => defaultSymbol.indexOf(v.symbol) > -1
-        );
-      }
-      this.selectAssets = result;
-      this.tableData = result;
-    },
-
-    transfer(asset, type) {
-      if (type !== "general" && this.disableTx) return;
-      if (type === "crossIn") {
-        // L1到L2
-        this.currentTab = "first";
-      } else if (type === "withdrawal") {
-        // L2到L1
-        this.currentTab = "third";
-      } else {
-        // L2内部转账
-        this.currentTab = "second";
-      }
-      this.showTransfer = true;
-      this.transferAsset = asset;
-      // console.log(this.transferAsset,55)
-    },
-    isShowCrossHandle(item) {
-      if (!item.heterogeneousList) return false;
-      let supportedChain = false;
-      item.heterogeneousList.map(v => {
-        Object.keys(_networkInfo).map(key => {
-          if (_networkInfo[key].chainId === v.heterogeneousChainId && key === this.network) {
-            supportedChain = true;
-          }
-        });
-      });
-      return supportedChain;
-    },
-    superLong(str, len = 9) {
-      return superLong(str, len);
-    },
-    getContractAddress(heterogeneousList, registerChainId) {
-      if (!heterogeneousList || !heterogeneousList.length) {
-        return false;
-      }
-      const info = heterogeneousList.filter(
-        v => v.heterogeneousChainId === registerChainId
-      )[0];
-      if (!info) {
-        return false;
-      } else {
-        return info.contractAddress;
-      }
-    }
-  }
-});*/
 </script>
 
 <style lang="scss" scoped>

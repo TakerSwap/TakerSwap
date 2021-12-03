@@ -1,7 +1,9 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { useStore } from "@/store";
 import storage from "@/utils/storage";
 import useStoreState from "@/hooks/useStoreState";
+import {AccountFarm} from "@/store/types";
 
 interface Farm {
   type: "farm" | "pool";
@@ -11,11 +13,11 @@ interface Farm {
 
 export default function useMyFarm() {
   const router = useRouter();
-  const myFarms = ref([]);
+  const store = useStore();
+  const myFarms = ref<AccountFarm[]>([]);
   const { addressInfo: currentAccount } = useStoreState();
   onMounted(() => {
     myFarms.value = currentAccount.value.farms || [];
-    console.log(currentAccount, 666)
   });
   function toMyFarm(farm: Farm) {
     let url;
@@ -37,6 +39,7 @@ export default function useMyFarm() {
           v.farms = [farm];
         }
         myFarms.value = v.farms;
+        store.commit("setCurrentAddress", v);
       }
     });
     storage.set("local", "accountList", accountList);

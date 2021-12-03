@@ -96,8 +96,8 @@
   </div>
 </template>
 
-<script>
-import { computed, ref, watch, onMounted } from "vue";
+<script lang="ts">
+import { defineComponent, computed, ref, watch, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import useLang from "@/hooks/useLang";
 import { listen } from "@/service/socket/websocket";
@@ -105,7 +105,7 @@ import config from "@/config";
 
 const url = config.WS_URL;
 
-export default {
+export default defineComponent({
   name: "LeftNav",
   props: {
     collapseMenu: Boolean
@@ -150,11 +150,11 @@ export default {
       }
     );
 
-    function handleSelect(key) {
+    function handleSelect(key: string) {
       toUrl(key);
     }
 
-    function toUrl(name, url = "") {
+    function toUrl(name: string, url = "") {
       if (url) {
         window.open(url);
       } else {
@@ -199,7 +199,7 @@ export default {
       usdValue
     };
   }
-};
+});
 </script>
 
 <style lang="scss">

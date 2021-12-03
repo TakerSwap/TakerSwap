@@ -7,7 +7,7 @@
     <div class="title">
       {{ "From " + $store.getters.chain }}
       <span class="click" @click="openUrl(father.address, father.network)">
-        {{ superLong(father.address) }}
+        {{ superLong(father.address, 6) }}
         <i class="iconfont icon-tiaozhuanlianjie"></i>
       </span>
     </div>
@@ -18,7 +18,6 @@
         :icon="transferAsset.symbol"
         :assetList="assetsList"
         :balance="balance"
-        :errorTip="amountErrorTip"
         :show-amount="false"
         @selectAsset="selectAsset"
         @max="max"
@@ -28,17 +27,17 @@
       <el-button
         type="primary"
         v-if="!needAuth"
-        @click="sendTx"
+        @click="handleSendTx"
         :disabled="disableTransfer"
       >
         {{
-          noEnoughBalance ? $t("transfer.transfer15") : $t("transfer.transfer9")
+          amountErrorTip ? $t("transfer.transfer15") : $t("transfer.transfer9")
         }}
       </el-button>
       <el-button
         type="primary"
         v-else
-        @click="approveERC20"
+        @click="handleApprove"
         :disabled="father.disableTx"
       >
         {{ $t("transfer.transfer13") }}
@@ -47,92 +46,92 @@
   </div>
 </template>
 
-<script>
-import { defineComponent } from "vue";
+<script lang="ts">
+import {
+  defineComponent,
+  ref,
+  inject,
+  watch,
+  computed,
+  onMounted,
+  onBeforeUnmount
+} from "vue";
+import { useToast } from "vue-toastification";
 import CustomInput from "@/components/CustomInput.vue";
 import { superLong, _networkInfo, Minus } from "@/utils/util";
-import { ETransfer } from "@/utils/api";
+import { useI18n } from "vue-i18n";
+import useCrossIn from "../hooks/useCrossIn";
+
+import { rootCmpKey, RootComponent, AssetItemType } from "../types";
+import {HeterogeneousInfo} from "@/store/types";
+
 export default defineComponent({
   name: "crossIn",
   components: {
     CustomInput
   },
-  inject: ["father"],
-  watch: {
-    amount(val) {
-      if (val) {
-        /* let decimals = this.transferAsset.decimals || 0;
-        let patrn = "";
-        if (!decimals) {
-          patrn = new RegExp("^([1-9][\\d]{0,20}|0)(\\.[\\d])?$");
-        } else {
-          patrn = new RegExp(
-            "^([1-9][\\d]{0,20}|0)(\\.[\\d]{0," + decimals + "})?$"
-          );
-        }
-        if (!patrn.exec(val)) {
-          this.amountErrorTip = this.$t("transfer.transfer17") + decimals;
-        } else  */
-        if (!Number(this.balance) || Minus(this.balance, this.amount) < 0) {
-          this.amountErrorTip = this.$t("transfer.transfer15");
-        } else {
-          this.amountErrorTip = "";
+  setup() {
+    const father = inject(rootCmpKey, {} as RootComponent);
+    const { t } = useI18n();
+    const toast = useToast();
+
+    const loading = ref(false);
+    const amount = ref("");
+    const {
+      balance,
+      getBalance,
+      fee,
+      getFee,
+      needAuth,
+      getERC20Allowance,
+      approveERC20,
+      sendTx
+    } = useCrossIn();
+
+    const amountErrorTip = ref("");
+    watch(
+      () => amount.value,
+      val => {
+        if (val) {
+          if (
+            !balance.value ||
+            Minus(balance.value, amount.value).toNumber() < 0
+          ) {
+            amountErrorTip.value = t("transfer.transfer15");
+          } else {
+            amountErrorTip.value = "";
+          }
         }
       }
-    },
-    "father.crossInOutSymbol": {
-      deep: true,
-      handler() {
-        // this.filterAssets();
-      }
-    }
-  },
-  data() {
-    this.heterogeneousInfo = null; // 异构链信息
-    return {
-      loading: false,
-      transferAsset: {},
-      amount: "",
-      balance: 0,
-      fee: 0,
-      needAuth: false, // token资产是否需要授权
-      assetsList: [],
-      amountErrorTip: "",
-      timer: null
-    };
-  },
-  computed: {
-    disableTransfer() {
+    );
+    // const { father, loading, amount, balance, amountErrorTip } = useTransfer();
+    const disableTransfer = computed(() => {
       return !!(
-        !Number(this.fee) ||
-        !Number(this.amount) ||
-        !Number(this.balance) ||
-        this.amountErrorTip ||
-        this.father.disableTx
+        !fee.value ||
+        !amount.value ||
+        !balance.value ||
+        amountErrorTip.value ||
+        father.disableTx
       );
-    },
-    // 余额不足
-    noEnoughBalance() {
-      if (!Number(this.balance) || !Number(this.amount)) return false;
-      return Minus(this.balance, this.amount) < 0;
-    }
-  },
-  mounted() {
-    this.transfer = new ETransfer();
-    this.filterAssets();
-    this.selectAsset(this.father.transferAsset);
-  },
-  beforeUnmount() {
-    if (this.timer) clearInterval(this.timer);
-    this.timer = null;
-  },
-  methods: {
-    filterAssets() {
-      // console.log(123465,this.father);
-      const chain = _networkInfo[this.father.network];
+    });
+
+    const assetsList = ref<AssetItemType[]>([]);
+    const transferAsset = ref(father.transferAsset);
+
+    let timer: number;
+    onMounted(() => {
+      getAssetsList();
+      selectAsset(transferAsset.value);
+    });
+    onBeforeUnmount(() => {
+      if (timer) clearInterval(timer);
+    });
+
+    function getAssetsList() {
+      const chain = _networkInfo[father.network];
       const mainAsset = chain?.mainAsset;
-      if (this.father.disableTx || !chain) return;
-      this.assetsList = this.father.crossInOutSymbol
+      if (father.disableTx || !chain) return;
+      assetsList.value = father.crossInOutSymbol
         .filter(v => {
           return v.heterogeneousList?.filter(item => {
             return item.heterogeneousChainId === chain.chainId;
@@ -147,161 +146,124 @@ export default defineComponent({
             contractAddress: tempAddress
           };
         });
-      const tempIndex = this.assetsList.findIndex(
+      const tempIndex = assetsList.value.findIndex(
         item => item.symbol === mainAsset
       );
-      const tempAsset = this.assetsList[tempIndex];
+      const tempAsset = assetsList.value[tempIndex];
       // 将主资产排序到到第一个
-      this.assetsList.splice(tempIndex, 1);
-      this.assetsList.unshift(tempAsset);
-    },
-    async selectAsset(asset) {
-      this.transferAsset = asset;
+      assetsList.value.splice(tempIndex, 1);
+      assetsList.value.unshift(tempAsset);
+    }
+
+    async function selectAsset(asset: AssetItemType) {
+      transferAsset.value = asset;
       // console.log(asset, 789654, this.father);
-      if (this.timer) clearInterval(this.timer);
-      if (this.father.disableTx) return;
-      await this.checkAsset(asset);
-      this.timer = setInterval(() => {
-        this.checkAsset(asset);
+      if (timer) clearInterval(timer);
+      if (father.disableTx) return;
+      await checkAsset(asset);
+      timer = window.setInterval(() => {
+        checkAsset(asset);
       }, 5000);
-    },
+    }
+
+    let heterogeneousInfo: HeterogeneousInfo;
     // 检查资产是否支持从该异构链转入
-    async checkAsset(asset) {
-      // const asset = this.transferAsset;
-      // this.fee = "";
-      // this.amount = "";
-      // this.balance = "";
-      this.needAuth = false;
+    async function checkAsset(asset: AssetItemType) {
+      needAuth.value = false;
       const heterogeneousList = asset.heterogeneousList || [];
-      const heterogeneousChainId = _networkInfo[this.father.network]?.chainId;
+      const heterogeneousChainId = _networkInfo[father.network]?.chainId;
       if (!heterogeneousChainId) return;
-      const heterogeneousInfo = heterogeneousList.find(
+      heterogeneousInfo = heterogeneousList.find(
         v => v.heterogeneousChainId === heterogeneousChainId
-      );
-      this.heterogeneousInfo = heterogeneousInfo;
+      ) as HeterogeneousInfo;
       // console.log(heterogeneousInfo, 123456);
       if (heterogeneousInfo) {
-        this.transferAsset = asset;
+        transferAsset.value = asset;
         if (heterogeneousInfo.isToken) {
-          this.getERC20Allowance();
+          getERC20Allowance(heterogeneousInfo, father.address);
         }
-        await this.getGasPrice();
-        this.getBalance();
-      } else {
-        this.transferAsset = {};
-      }
-    },
-    // token资产查询授权额度
-    async getERC20Allowance() {
-      const { contractAddress, heterogeneousChainMultySignAddress } =
-        this.heterogeneousInfo;
-      this.needAuth = await this.transfer.getERC20Allowance(
-        contractAddress,
-        heterogeneousChainMultySignAddress,
-        this.father.address
-      );
-      if (!this.needAuth) {
-        this.refreshAuth = false;
-      }
-      if (this.refreshAuth) {
-        setTimeout(() => {
-          this.getERC20Allowance();
-        }, 5000);
-      }
-    },
-    async getGasPrice() {
-      this.fee = await this.transfer.getGasPrice(
-        this.heterogeneousInfo.isToken
-      );
-      // console.log(this.fee, 444);
-    },
-    async getBalance() {
-      if (!this.heterogeneousInfo) return;
-      const { contractAddress, isToken } = this.heterogeneousInfo;
-      if (isToken) {
-        this.balance = await this.transfer.getERC20Balance(
-          contractAddress,
-          this.transferAsset.decimals,
-          this.father.address
+        await getFee(heterogeneousInfo.isToken);
+        getBalance(
+          heterogeneousInfo,
+          father.address,
+          transferAsset.value.decimals
         );
       } else {
-        this.balance = await this.transfer.getEthBalance(this.father.address);
+        transferAsset.value = {} as AssetItemType;
       }
-      // console.log(this.balance, "===balance===");
-    },
-    superLong(str, len = 6) {
-      return superLong(str, len);
-    },
-    max() {
-      if (!this.balance || !Number(this.balance)) return;
-      if (this.heterogeneousInfo.isToken) {
-        this.amount = this.balance;
+    }
+
+    function max() {
+      if (!balance.value || !Number(balance.value)) {
+        amount.value = "0";
+        return;
+      }
+      if (heterogeneousInfo?.isToken) {
+        amount.value = balance.value;
       } else {
-        if (!this.fee) return;
-        this.amount = Minus(this.balance, this.fee).toString();
+        if (!fee.value) return;
+        amount.value = Minus(balance.value, fee.value).toString();
       }
-    },
-    async approveERC20() {
-      this.loading = true;
-      const { contractAddress, heterogeneousChainMultySignAddress } =
-        this.heterogeneousInfo;
+    }
+    async function handleApprove() {
+      loading.value = true;
       try {
-        const res = await this.transfer.approveERC20(
-          contractAddress,
-          heterogeneousChainMultySignAddress,
-          this.father.address
-        );
-        this.handleMsg(res);
-        if (res.hash) {
-          this.refreshAuth = true;
-          this.getERC20Allowance();
-        }
+        const res = await approveERC20(heterogeneousInfo, father.address);
+        handleMsg(res);
       } catch (e) {
-        this.$toast(e.message || e, {
-          type: "error"
-        });
+        toast.error(e.message || e);
       }
-      this.loading = false;
-    },
-    async sendTx() {
-      this.loading = true;
+      loading.value = false;
+    }
+
+    async function handleSendTx() {
+      loading.value = true;
       try {
-        const { contractAddress, heterogeneousChainMultySignAddress } =
-          this.heterogeneousInfo;
-        const params = {
-          multySignAddress: heterogeneousChainMultySignAddress,
-          nerveAddress: this.father.takerAddress,
-          numbers: this.amount,
-          fromAddress: this.father.address,
-          contractAddress,
-          decimals: this.transferAsset.decimals
-        };
-        // console.log(params);
-        const res = await this.transfer.crossIn(params);
-        this.handleMsg(res);
+        const res = await sendTx(
+          heterogeneousInfo,
+          father.takerAddress,
+          amount.value,
+          father.address,
+          transferAsset.value.decimals
+        );
+        handleMsg(res);
       } catch (e) {
         console.log(e, "crossin-transfer-error");
-        this.$toast(e.message || e, {
-          type: "error"
-        });
+        toast.error(e.message || e);
       }
-      this.loading = false;
-    },
-    handleMsg(data) {
-      // console.log(data, 555);
+      loading.value = false;
+    }
+    function handleMsg(data: any) {
       if (data.hash) {
-        this.amount = "";
-        this.$toast(this.$t("transfer.transfer14"));
+        amount.value = "";
+        toast.success(t("transfer.transfer14"));
       } else {
-        this.$toast(data.message || data, {
-          type: "error"
-        });
+        toast.error(data.message || data);
       }
-    },
-    openUrl(address, network) {
+    }
+    function openUrl(address: string, network: string) {
       const { origin } = _networkInfo[network];
       window.open(origin + "/address/" + address);
     }
+
+    return {
+      father,
+      loading,
+      amount,
+      balance,
+      fee,
+      needAuth,
+      amountErrorTip,
+      disableTransfer,
+      assetsList,
+      transferAsset,
+      selectAsset,
+      superLong,
+      max,
+      handleApprove,
+      handleSendTx,
+      openUrl
+    };
   }
 });
 </script>

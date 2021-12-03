@@ -1,4 +1,4 @@
-import { AssetItem } from "@/store";
+import { AssetItem } from "@/store/types";
 
 export { AssetItem };
 

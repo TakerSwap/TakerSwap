@@ -5,35 +5,12 @@ import { getAddress } from "@/hooks/useEthereum";
 import config from "@/config";
 // @ts-ignore
 import { getAssetList } from "@/service/api";
-
-// InjectionKey 将store安装到Vue应用程序时提供类型,将类型传递InjectionKey给useStore方法
-export interface AssetItem {
-  chainId: number;
-  assetId: number;
-  assetKey: string;
-  number: string;
-  locking: string;
-  valuation: string;
-  available: string;
-  registerChainId: number;
-  symbol: string;
-  decimals: number;
-}
-// 手动声明 state 类型
-export interface State {
-  addressInfo: any;
-  chainId: string;
-  showConnect: boolean;
-  lang: string | null;
-  destroyAddress: string | undefined;
-  feeAddress: string | undefined;
-  assetList: AssetItem[] | [];
-}
+import { Account, State } from "@/store/types";
 
 export default createStore<State>({
   state: {
     // hasTakerAddress: false,
-    addressInfo: {},
+    addressInfo: {} as Account,
     chainId: "",
     showConnect: false,
     lang: storage.get("local", "lang"),

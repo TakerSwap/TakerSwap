@@ -384,8 +384,13 @@ export default defineComponent({
         } else {
           const reserveA = type === "from" ? info.reserveTo : info.reserveFrom;
           const reserveB = type === "from" ? info.reserveFrom : info.reserveTo;
-          const res = nerve.swap.quote(amount, reserveA, reserveB); // from,reverseFrom,reverseTo / to,reverseTo,reverseFrom
-          return divisionAndFix(res.toString(), toDecimal, toDecimal);
+          try {
+            const res = nerve.swap.quote(amount, reserveA, reserveB); // from,reverseFrom,reverseTo / to,reverseTo,reverseFrom
+            return divisionAndFix(res.toString(), toDecimal, toDecimal);
+          } catch (e) {
+            console.log(e, "===计算失败===");
+            return "";
+          }
         }
       } else {
         return "";
