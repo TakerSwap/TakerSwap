@@ -1,7 +1,8 @@
 import { ref, watch } from "vue";
 import useStoreState from "@/hooks/useStoreState";
 import { AssetItemType } from "../types";
-import { _networkInfo, Minus } from "@/utils/util";
+import { Minus } from "@/utils/util";
+import { _networkInfo } from "@/utils/heterogeneousChainConfig";
 
 export default function useAssetsList() {
   const loading = ref(false);

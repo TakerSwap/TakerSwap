@@ -163,7 +163,7 @@ export default defineComponent({
         flex-direction: column;
         justify-content: space-between;
         text-align: right;
-        max-width: 70%;
+        max-width: 60%;
         span:nth-child(1) {
           text-align: right;
           font-size: 20px;

@@ -18,9 +18,9 @@
 
 <script lang="ts">
 import { defineComponent, computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { _networkInfo } from "@/utils/util";
 import config from "@/config";
 import useEthereum, { AddChain } from "@/hooks/useEthereum";
+import { _networkInfo } from "@/utils/heterogeneousChainConfig";
 
 interface ChainItem extends AddChain {
   logo: string;

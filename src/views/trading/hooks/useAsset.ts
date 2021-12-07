@@ -1,8 +1,8 @@
 import { ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import useStoreState from "@/hooks/useStoreState";
-import { _networkInfo } from "@/utils/util";
 import { DefaultAsset, AssetItem } from "../types";
+import { _networkInfo } from "@/utils/heterogeneousChainConfig";
 
 export default function useAsset() {
   const route = useRoute();

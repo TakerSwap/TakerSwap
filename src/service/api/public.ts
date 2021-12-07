@@ -1,5 +1,4 @@
 import {
-  _networkInfo,
   createRPCParams,
   divisionAndFix,
   Plus,
@@ -9,6 +8,7 @@ import {
 import { listen } from "@/service/socket/promiseSocket";
 import config from "@/config";
 import store from "@/store";
+import { _networkInfo } from "@/utils/heterogeneousChainConfig";
 
 const url = config.WS_URL;
 

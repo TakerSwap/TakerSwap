@@ -58,12 +58,13 @@ import {
 } from "vue";
 import { useToast } from "vue-toastification";
 import CustomInput from "@/components/CustomInput.vue";
-import { superLong, _networkInfo, Minus } from "@/utils/util";
+import { superLong, Minus } from "@/utils/util";
 import { useI18n } from "vue-i18n";
 import useCrossIn from "../hooks/useCrossIn";
 
 import { rootCmpKey, RootComponent, AssetItemType } from "../types";
-import {HeterogeneousInfo} from "@/store/types";
+import { HeterogeneousInfo } from "@/store/types";
+import { _networkInfo } from "@/utils/heterogeneousChainConfig";
 
 export default defineComponent({
   name: "crossIn",

@@ -113,7 +113,6 @@ import { defineComponent, ref, watch, computed } from "vue";
 import {
   superLong,
   getCurrentAccount,
-  _networkInfo,
   isNULSOrNERVE
 } from "@/utils/util";
 import useEthereum, { providerList } from "@/hooks/useEthereum";
@@ -122,6 +121,7 @@ import { useStore } from "vuex";
 import AuthButton from "./AuthButton.vue";
 import SwitchChain from "./SwitchChain.vue";
 import useStoreState from "@/hooks/useStoreState";
+import { _networkInfo } from "@/utils/heterogeneousChainConfig";
 
 export default defineComponent({
   name: "Header",

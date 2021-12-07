@@ -12,6 +12,25 @@
         v-model="searchVal"
         :placeholder="$t('assets.assets8')"
       ></el-input>
+      <!--      <VirtualList :list="list">
+        <template v-slot="scope">
+          <div @click="changeSelect(scope.item.assetKey)" class="list-item">
+            <div class="flex-center">
+              <symbol-icon :icon="scope.item.symbol"></symbol-icon>
+              <div class="asset-base-info">
+                <div>
+                  {{ scope.item.symbol }}
+                  <span>({{ scope.item.originNetwork }})</span>
+                </div>
+                <span>ID: {{ scope.item.assetKey }}</span>
+              </div>
+            </div>
+            <keep-alive>
+              <el-checkbox v-model="scope.item.added" disabled></el-checkbox>
+            </keep-alive>
+          </div>
+        </template>
+      </VirtualList>-->
       <ul class="list-wrap">
         <li
           v-for="item in list"
@@ -55,12 +74,14 @@
 import { defineComponent, PropType, computed, watch, ref } from "vue";
 import SymbolIcon from "@/components/SymbolIcon.vue";
 import _ from "lodash";
+// import VirtualList from "@/components/VirtualList.vue";
 
 import { AssetItemType } from "./types";
 
 export default defineComponent({
   components: {
     SymbolIcon
+    // VirtualList
   },
 
   props: {
@@ -90,6 +111,7 @@ export default defineComponent({
     const list = ref<AssetItemType[]>([]);
     let backupList: AssetItemType[] = [];
     const searchVal = ref("");
+    // const virtualList = ref<InstanceType<typeof VirtualList>>();
     watch(
       () => props.showAssetManage,
       val => {
@@ -105,6 +127,7 @@ export default defineComponent({
           });
           list.value = cloneList;
           backupList = _.cloneDeep(cloneList);
+          // virtualList.value?.resetScroll();
           filter(searchVal.value);
         }
       }
@@ -134,6 +157,7 @@ export default defineComponent({
     watch(
       () => searchVal.value,
       val => {
+        // virtualList.value?.resetScroll();
         filter(val);
       }
     );
@@ -151,6 +175,7 @@ export default defineComponent({
 
     function closed() {
       searchVal.value = "";
+      // virtualList.value?.resetScroll();
     }
 
     return {
@@ -175,6 +200,52 @@ export default defineComponent({
       height: 58px;
     }
     margin-bottom: 15px;
+  }
+  .list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 66px;
+    padding: 9px 0;
+    /* border-bottom: 1px solid #dfe4ef; */
+    cursor: pointer;
+    img {
+      width: 48px;
+      height: 48px;
+      margin-right: 15px;
+    }
+    .asset-base-info {
+      /* width: 120px; */
+      div {
+        font-size: 18px;
+        //font-weight: 600;
+      }
+      span {
+        font-size: 14px;
+        color: $labelColor;
+        font-weight: 400;
+      }
+    }
+    .el-checkbox {
+      margin-right: 10px;
+      .el-checkbox__inner {
+        width: 20px;
+        height: 20px;
+        &::after {
+          height: 10px;
+          left: 6px;
+          top: 2px;
+          font-weight: 600;
+          width: 5px;
+        }
+      }
+      .el-checkbox__input .el-checkbox__inner {
+        cursor: pointer !important;
+        &:after {
+          cursor: pointer !important;
+        }
+      }
+    }
   }
   .list-wrap {
     max-height: 50vh;
@@ -218,9 +289,9 @@ export default defineComponent({
           }
         }
         .el-checkbox__input .el-checkbox__inner {
-          cursor: pointer!important;
+          cursor: pointer !important;
           &:after {
-            cursor: pointer!important;
+            cursor: pointer !important;
           }
         }
       }

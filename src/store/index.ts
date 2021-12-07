@@ -1,11 +1,12 @@
 import { createStore, useStore as useVuexStore } from "vuex";
-import { _networkInfo, isNULSOrNERVE } from "@/utils/util";
+import { isNULSOrNERVE } from "@/utils/util";
 import storage from "@/utils/storage";
 import { getAddress } from "@/hooks/useEthereum";
 import config from "@/config";
 // @ts-ignore
 import { getAssetList } from "@/service/api";
 import { Account, State } from "@/store/types";
+import { _networkInfo } from "@/utils/heterogeneousChainConfig";
 
 export default createStore<State>({
   state: {

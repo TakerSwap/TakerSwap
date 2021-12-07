@@ -64,7 +64,6 @@ import {
   superLong,
   Minus,
   timesDecimals,
-  _networkInfo,
   Plus,
   floatToCeil
 } from "@/utils/util";
@@ -74,7 +73,8 @@ import config from "@/config";
 import useBroadcastNerveHex from "@/hooks/useBroadcastNerveHex";
 
 import { rootCmpKey, RootComponent, AssetItemType } from "../types";
-import {HeterogeneousInfo} from "@/store/types";
+import { HeterogeneousInfo } from "@/store/types";
+import { _networkInfo } from "@/utils/heterogeneousChainConfig";
 
 export default defineComponent({
   name: "withdrawal",
