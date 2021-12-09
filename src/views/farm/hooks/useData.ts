@@ -9,7 +9,6 @@ import {
   Minus,
   fixNumber
 } from "@/utils/util";
-// @ts-ignore
 import { ETransfer } from "@/utils/api";
 import { ethers } from "ethers";
 import useContractAddress from "./useContractAddress";

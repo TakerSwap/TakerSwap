@@ -126,7 +126,7 @@ export default defineComponent({
 
     function changeInput(val: string) {
       // this.amount = val;
-      const decimals = chooseAsset.value.decimals || 0;
+      const decimals = chooseAsset.value?.decimals || 0;
       let reg: RegExp;
       if (!decimals) {
         reg = new RegExp("^([1-9][\\d]*|0)(\\.[\\d]*)?$|(^\\.[\\d]*$)");

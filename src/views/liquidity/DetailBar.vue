@@ -50,8 +50,6 @@ import { defineComponent, ref, PropType } from "vue";
 import { Times, timesDecimals, divisionDecimals, Minus } from "@/utils/util";
 import nerve from "nerve-sdk-js";
 import { useI18n } from "vue-i18n";
-// @ts-ignore
-import { NTransfer } from "@/utils/api";
 import {
   calMinAmountOnSwapRemoveLiquidity,
   getSwapPairInfo

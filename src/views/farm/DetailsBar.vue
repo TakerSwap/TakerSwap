@@ -215,7 +215,6 @@ import useBroadcastNerveHex from "@/hooks/useBroadcastNerveHex";
 import { ethers } from "ethers";
 import { getAssetBalance } from "@/service/api";
 import nerve from "nerve-sdk-js";
-// @ts-ignore
 import { ETransfer } from "@/utils/api";
 import { timesDecimals, divisionDecimals, isBeta } from "@/utils/util";
 import config from "@/config";

@@ -20,6 +20,7 @@
         :icon="transferAsset.symbol"
         :assetList="assetsList"
         :balance="balance"
+        :selectedAsset="transferAsset"
         @selectAsset="selectAsset"
         @max="max"
       ></custom-input>
@@ -36,7 +37,6 @@
 import { defineComponent, ref, computed, watch, inject } from "vue";
 import CustomInput from "@/components/CustomInput.vue";
 import { Minus, timesDecimals } from "@/utils/util";
-// @ts-ignore
 import { NTransfer } from "@/utils/api";
 
 import { rootCmpKey, RootComponent, AssetItemType } from "../types";

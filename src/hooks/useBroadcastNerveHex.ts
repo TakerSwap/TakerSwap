@@ -1,6 +1,5 @@
 import useStoreState from "@/hooks/useStoreState";
 import nerve from "nerve-sdk-js";
-// @ts-ignore
 import { NTransfer } from "@/utils/api";
 import { broadcastHex } from "@/service/api";
 
@@ -29,7 +28,7 @@ export default function useBroadcastNerveHex() {
   // 没有交易hex，自己组装交易获取hex，然后调用metamask签名，广播
   async function handleTxInfo(txInfo: any, type: number, txData: any) {
     const transfer = new NTransfer({ chain: "NERVE", type });
-    const inputOuput = await transfer.inputsOrOutputs(txInfo);
+    const inputOuput: any = await transfer.inputsOrOutputs(txInfo);
     const txHex = await transfer.getTxHex({
       inputs: inputOuput.inputs,
       outputs: inputOuput.outputs,

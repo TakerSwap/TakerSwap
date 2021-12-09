@@ -19,6 +19,7 @@
         :assetList="assetsList"
         :balance="balance"
         :show-amount="false"
+        :selectedAsset="transferAsset"
         @selectAsset="selectAsset"
         @max="max"
       ></custom-input>

@@ -331,7 +331,8 @@ a.line {
 }
 
 :hover::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb {
-  background: #d8d8d8
+  background: #d8d8d8;
+  //background: $formItemColor
 }
 
 .mobile {

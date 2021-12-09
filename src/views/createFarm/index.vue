@@ -114,8 +114,6 @@
 <script lang="ts">
 import { defineComponent, reactive, ref, computed } from "vue";
 import nerve from "nerve-sdk-js";
-// @ts-ignore
-import { NTransfer } from "@/utils/api";
 import { useToast } from "vue-toastification";
 import { useI18n } from "vue-i18n";
 import { getBlockInfo } from "@/service/api";
@@ -128,7 +126,7 @@ import useBroadcastNerveHex from "@/hooks/useBroadcastNerveHex";
 import useMyFarm from "./hooks/useMyFarm";
 import { ElForm } from "element-plus";
 
-import {AssetItem} from "@/store/types";
+import { AssetItem } from "@/store/types";
 
 export default defineComponent({
   name: "CreateFarm",

@@ -67,8 +67,8 @@ import {
   Plus,
   floatToCeil
 } from "@/utils/util";
-// @ts-ignore
-import { NTransfer, ETransfer, getSymbolUSD } from "@/utils/api";
+import { ETransfer } from "@/utils/api";
+import { getSymbolUSD } from "@/service/api";
 import config from "@/config";
 import useBroadcastNerveHex from "@/hooks/useBroadcastNerveHex";
 
@@ -208,17 +208,14 @@ export default defineComponent({
           );
         }
       } else {
-        const feeAssetUSD = await getSymbolUSD({
-          chainId,
-          assetId
-        });
+        const feeAssetUSD = (await getSymbolUSD(chainId, assetId)) as string;
         const mainAsset = supportedFeeAssets.value.find(
           v => v.symbol === heterogeneousInfo.chainName
         ) as AssetItemType;
-        const L1MainAssetUSD = await getSymbolUSD({
-          chainId: mainAsset.chainId,
-          assetId: mainAsset.assetId
-        });
+        const L1MainAssetUSD = (await getSymbolUSD(
+          mainAsset.chainId,
+          mainAsset.assetId
+        )) as string;
         if (withdrawalChain === "TRON") {
           res = transfer.calWithdrawalFeeForTRON(
             L1MainAssetUSD,

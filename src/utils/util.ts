@@ -181,16 +181,15 @@ export function createRPCParams(method: string): any {
 }
 
 export function debounce(fn: any, delay: number) {
-  let timer: any;
+  let timer: number;
   return function () {
     const args = arguments;
     if (timer) {
       clearTimeout(timer);
     }
-    timer = setTimeout(() => {
+    timer = window.setTimeout(() => {
       // @ts-ignore
       fn.apply(this, args);
-      timer = null;
     }, delay);
   };
 }

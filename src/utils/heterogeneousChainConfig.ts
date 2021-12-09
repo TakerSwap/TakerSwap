@@ -176,3 +176,30 @@ export const _networkInfo = {
     decimals: 6
   }
 };
+
+export const RPC_URL = {
+  BSC: {
+    ropsten: "https://data-seed-prebsc-1-s1.binance.org:8545/",
+    homestead: "https://bsc-dataseed.binance.org/"
+  },
+  Heco: {
+    ropsten: "https://http-testnet.hecochain.com",
+    homestead: "https://http-mainnet.hecochain.com"
+  },
+  OKExChain: {
+    ropsten: "https://exchaintestrpc.okex.org",
+    homestead: "https://exchainrpc.okex.org"
+  },
+  Harmony: {
+    ropsten: "https://api.s0.b.hmny.io",
+    homestead: "https://api.harmony.one"
+  },
+  Polygon: {
+    ropsten: "https://rpc-mumbai.maticvigil.com",
+    homestead: "https://rpc-mainnet.maticvigil.com"
+  },
+  KCC: {
+    ropsten: "https://rpc-testnet.kcc.network",
+    homestead: "https://rpc-mainnet.kcc.network"
+  }
+};

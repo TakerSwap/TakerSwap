@@ -108,11 +108,8 @@ import {
   Plus
 } from "@/utils/util";
 import { useI18n } from "vue-i18n";
-import { useStore } from "vuex";
 import { getSwapPairInfo, calMinAmountOnSwapAddLiquidity } from "@/service/api";
 import nerve from "nerve-sdk-js";
-// @ts-ignore
-import { NTransfer } from "@/utils/api";
 import { useToast } from "vue-toastification";
 
 import { AssetItem, AddLiquidityState } from "./types";

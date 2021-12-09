@@ -7,7 +7,13 @@
           <slot :item="item"></slot>
         </template>
       </div>
-      <p class="no-data" v-else>No Data</p>
+      <p
+        class="no-data"
+        v-else
+        style="text-align: center; color: #ccc; padding-top: 30px"
+      >
+        No Data
+      </p>
     </div>
   </div>
 </template>
@@ -31,15 +37,15 @@ export default defineComponent({
       default: () => []
     },
     height: {
-      type: [Number, String],
+      type: String,
       default: "470px"
     },
     itemHeight: {
-      type: [Number, String],
+      type: Number,
       default: 66
     },
     bufferCount: {
-      type: [Number, String],
+      type: Number,
       default: 3
     }
   },
@@ -53,15 +59,16 @@ export default defineComponent({
     let maxShowAmount: number;
 
     onMounted(() => {
-      const { offsetHeight } = virtualList.value as HTMLElement;
-      console.log(offsetHeight, 4646)
-      maxShowAmount =
-        Math.floor(offsetHeight / +props.itemHeight) +
-        Number(props.bufferCount); // 显示的 + 用于缓冲的
-      getRenderList(0, maxShowAmount);
+      nextTick(() => {
+        const { offsetHeight } = virtualList.value as HTMLElement;
+        maxShowAmount =
+          Math.floor(offsetHeight / props.itemHeight) +
+          Number(props.bufferCount); // 显示的 + 用于缓冲的
+        getRenderList(0, maxShowAmount);
+      });
     });
     const scrollHoldHeight = computed(() => {
-      return props.list.length * +props.itemHeight + "px";
+      return props.list.length * props.itemHeight + "px";
     });
 
     function resetScroll() {
@@ -79,12 +86,11 @@ export default defineComponent({
       start = s;
       end = e;
       renderList.value = props.list.slice(s, e);
-      console.log(s, e, renderList.value, 6633)
     }
     function handleScroll() {
       const { scrollTop } = scrollBox.value as HTMLElement;
-      const newStart = Math.floor(scrollTop / +props.itemHeight);
-      const boxOffset = scrollTop - (scrollTop % +props.itemHeight);
+      const newStart = Math.floor(scrollTop / props.itemHeight);
+      const boxOffset = scrollTop - (scrollTop % props.itemHeight);
       const newEnd = maxShowAmount + newStart;
       if (start !== newStart && end !== newEnd) {
         getRenderList(newStart, newEnd);
@@ -115,7 +121,7 @@ export default defineComponent({
   overflow: auto;
   .scroll-box {
     position: relative;
-    overflow: scroll;
+    overflow: auto;
   }
   .scroll-hold {
     position: absolute;

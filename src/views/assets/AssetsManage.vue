@@ -243,6 +243,7 @@ export default defineComponent({
         cursor: pointer !important;
         &:after {
           cursor: pointer !important;
+          transition: none;
         }
       }
     }

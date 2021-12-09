@@ -1,7 +1,6 @@
 import { ref } from "vue";
-// @ts-ignore
 import { ETransfer } from "@/utils/api";
-import {HeterogeneousInfo} from "@/store/types";
+import { HeterogeneousInfo } from "@/store/types";
 
 export default function useCrossIn() {
   const transfer = new ETransfer();
@@ -17,7 +16,7 @@ export default function useCrossIn() {
       if (isToken) {
         balance.value = await transfer.getERC20Balance(
           contractAddress,
-          decimal,
+          decimal as number,
           address
         );
       } else {

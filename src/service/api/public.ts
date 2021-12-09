@@ -101,11 +101,7 @@ export async function getAssetBalance(
 ) {
   const channel = "getAccountBalance";
   const params = createRPCParams(channel);
-  params.params = params.params.concat([
-    Number(chainId),
-    Number(assetId),
-    address
-  ]);
+  params.params = params.params.concat([chainId, assetId, address]);
   return await listen({
     url,
     channel,
@@ -161,4 +157,26 @@ export async function getAssetList(address = store.state.destroyAddress) {
   sortDataBySymbol.splice(mainSymbolIndex, 1);
   sortDataBySymbol.unshift(mainSymbol);
   return sortDataBySymbol;
+}
+
+/**
+ * @desc 获取资产usd价格
+ * @param chainId 资产chainId
+ * @param assetId 资产assetId
+ */
+export async function getSymbolUSD(
+  chainId = config.chainId,
+  assetId = config.assetId
+) {
+  const channel = "getBestSymbolPrice";
+  const params = createRPCParams(channel);
+  params.params = [chainId, assetId];
+  return await listen({
+    url,
+    channel,
+    params: {
+      cmd: true,
+      channel: "psrpc:" + JSON.stringify(params)
+    }
+  });
 }

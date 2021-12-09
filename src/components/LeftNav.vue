@@ -167,7 +167,7 @@ export default defineComponent({
     const { lang, switchLang } = useLang();
 
     const usdValue = ref("0.00");
-    function getOverview() {
+    /*function getOverview() {
       const channel = "mainAssetInfo";
       const params = {
         method: channel
@@ -187,7 +187,7 @@ export default defineComponent({
     onMounted(() => {
       getOverview();
       setInterval(getOverview, 10000);
-    });
+    });*/
 
     return {
       activeIndex,
