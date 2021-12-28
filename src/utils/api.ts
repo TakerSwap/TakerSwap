@@ -61,17 +61,7 @@ export class NTransfer {
       // 调用metamask签名hash，然后拼接公钥完成交易签名
     }
     hash = "0x" + tAssemble.getHash().toString("hex");
-    let flat = await this.provider.request({
-      method: "eth_sign",
-      params: [signAddress, hash]
-    });
-    // console.log(flat, 66, signAddress)
-    flat = flat.slice(2); // 去掉0x
-    const r = flat.slice(0, 64);
-    const s = flat.slice(64, 128);
-    // const recoveryParam = flat.slice(128)
-    let signature = new Signature({ r, s }).toDER("hex");
-    // signature = signature.slice(2)
+    const signature = await this.signHash(hash, signAddress);
     tAssemble.signatures = this.sdk.appSplicingPub(signature, pub);
     return tAssemble.txSerialize().toString("hex");
   }
@@ -84,20 +74,8 @@ export class NTransfer {
     const tAssemble = new txs.Transaction();
     tAssemble.parse(bufferReader);
     const hash = "0x" + tAssemble.getHash().toString("hex");
-
-    let flat = await this.provider.request({
-      method: "eth_sign",
-      params: [signAddress, hash]
-    });
-    // console.log(flat, 66, signAddress)
-    flat = flat.slice(2); // 去掉0x
-    const r = flat.slice(0, 64);
-    const s = flat.slice(64, 128);
-    // const recoveryParam = flat.slice(128)
-    let signature = new Signature({ r, s }).toDER("hex");
-    // signature = signature.slice(2)
     // const signData = this.sdk.appSplicingPub(signature, pub);
-
+    const signature = await this.signHash(hash, signAddress);
     //初始化签名对象
     const txSignData = new txsignatures.TransactionSignatures();
     // // 反序列化签名对象
@@ -109,6 +87,26 @@ export class NTransfer {
     tAssemble.signatures = txSignData.serialize();
     // tAssemble.signatures = signData;
     return tAssemble.txSerialize().toString("hex");
+  }
+
+  /**
+   * @desc 利用metamask签名hash
+   * @param hash 待签名交易hash
+   * @param signAddress 签名账户地址
+   */
+  async signHash(hash: string, signAddress: string) {
+    hash = hash.startsWith("0x") ? hash : "0x" + hash;
+    let flat = await this.provider.request({
+      method: "eth_sign",
+      params: [signAddress, hash]
+    });
+    // console.log(flat, 66, signAddress)
+    flat = flat.slice(2); // 去掉0x
+    const r = flat.slice(0, 64);
+    const s = flat.slice(64, 128);
+    // const recoveryParam = flat.slice(128)
+    // signature = signature.slice(2)
+    return new Signature({ r, s }).toDER("hex");
   }
 
   async inputsOrOutputs(data: any) {

@@ -122,7 +122,7 @@ export default defineComponent({
 
     const showDialog = ref(false);
 
-    const chooseAsset = ref(props.selectedAsset);
+    const chooseAsset = computed(() => props.selectedAsset);
 
     function changeInput(val: string) {
       // this.amount = val;
@@ -151,7 +151,6 @@ export default defineComponent({
     function changeSelect(asset: AssetItem) {
       if (!asset) return;
       emit("selectAsset", asset);
-      chooseAsset.value = asset;
       showDialog.value = false;
     }
     function max() {

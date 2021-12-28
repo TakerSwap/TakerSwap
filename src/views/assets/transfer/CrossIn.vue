@@ -171,7 +171,7 @@ export default defineComponent({
     let heterogeneousInfo: HeterogeneousInfo;
     // 检查资产是否支持从该异构链转入
     async function checkAsset(asset: AssetItemType) {
-      needAuth.value = false;
+      // needAuth.value = false;
       const heterogeneousList = asset.heterogeneousList || [];
       const heterogeneousChainId = _networkInfo[father.network]?.chainId;
       if (!heterogeneousChainId) return;
@@ -183,6 +183,8 @@ export default defineComponent({
         transferAsset.value = asset;
         if (heterogeneousInfo.isToken) {
           getERC20Allowance(heterogeneousInfo, father.address);
+        } else {
+          needAuth.value = false;
         }
         await getFee(heterogeneousInfo.isToken);
         getBalance(
