@@ -3,7 +3,8 @@ import {
   divisionAndFix,
   Plus,
   Times,
-  checkCanToL1
+  checkCanToL1,
+  checkCanToL1OnCurrent
 } from "@/utils/util";
 import { listen } from "@/service/socket/promiseSocket";
 import config from "@/config";
@@ -144,6 +145,7 @@ export async function getAssetList(address = store.state.destroyAddress) {
       v => v.chainId === item.registerChainId
     )?.name;
     item.canToL1 = checkCanToL1(item);
+    item.canToL1OnCurrent = checkCanToL1OnCurrent(item);
   });
   // 返回按字母排序
   const sortDataBySymbol = [...res]

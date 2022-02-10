@@ -691,7 +691,7 @@ export default defineComponent({
             );
             return [
               divisionAndFix(outAmount, toDecimal, toDecimal),
-              priceImpact
+              priceImpact.toFixed()
             ];
           } else {
             return [0, 0];

@@ -606,10 +606,10 @@ export default defineComponent({
               context.emit("updateList");
             }, 200);
           } else {
-            toast.error("Create Pair Failed");
+            toast.error("Add liquidity Failed");
           }
         } catch (e) {
-          console.log(e, "Create Pair-error");
+          console.log(e, "Add liquidity-error");
           toast.error(e.message || e);
         }
         state.loading = false;

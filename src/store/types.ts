@@ -21,6 +21,7 @@ export interface AssetItem {
   heterogeneousList?: HeterogeneousInfo[];
   originNetwork: string;
   canToL1: boolean;
+  canToL1OnCurrent: boolean;
   listAvailable?: string;
   contractAddress?: string;
 }
