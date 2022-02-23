@@ -149,7 +149,10 @@
               <symbol-icon :icon="item"></symbol-icon>
               <span>{{ item }}</span>
             </div>
-            <el-icon class="icon-arrow-right" v-if="index !== routesSymbol.length - 1">
+            <el-icon
+              class="icon-arrow-right"
+              v-if="index !== routesSymbol.length - 1"
+            >
               <arrow-right />
             </el-icon>
           </div>
@@ -225,6 +228,7 @@ import { getWholeTradeExactIn } from "@/service/api";
 import nerve from "nerve-sdk-js";
 import { useToast } from "vue-toastification";
 import config from "@/config";
+import useSpecialSwap from "./hooks/useSpecialSwap";
 import useStoreState from "@/hooks/useStoreState";
 import useBroadcastNerveHex from "@/hooks/useBroadcastNerveHex";
 import { ComponentInternalInstance } from "@vue/runtime-core";
@@ -253,6 +257,15 @@ export default defineComponent({
     const { t } = useI18n();
     const toast = useToast();
     const { takerAddress } = useStoreState();
+    const {
+      isStableCoinForNVT,
+      isStableCoinSwap,
+      checkIsStableCoinForNVT,
+      checkIsStableCoinSwap,
+      stableCoins,
+      stablePairList,
+      getReceiveOrderIndex
+    } = useSpecialSwap();
     const state = reactive<SwapState>({
       feeRate: "0.3", // 千三的手续费
       fromAmount: "",
@@ -275,9 +288,11 @@ export default defineComponent({
     });
 
     const loading = ref(false);
+
     function handleLoading(status: boolean) {
       loading.value = status;
     }
+
     // 选择swap资产 asset-选择的资产, type-from/to
     async function selectAsset(asset: AssetItem, type: string) {
       // console.log(asset, type, 9999);
@@ -319,22 +334,45 @@ export default defineComponent({
 
       getSwapRate(true);
       context.emit("updateRate", "");
+
+      checkIsStableCoinForNVT(
+        state?.fromAsset?.assetKey,
+        state?.toAsset?.assetKey
+      );
+      checkIsStableCoinSwap(
+        state?.fromAsset?.assetKey,
+        state?.toAsset?.assetKey
+      );
       if (
         state.toAsset &&
         state.fromAsset &&
         state.fromAsset.assetKey &&
         state.toAsset.assetKey
       ) {
-        // canRefresh.value = false;
-        // 缓存交易对信息
-        await storeSwapPairInfo();
-        // 反向缓存交易对信息
-        await storeSwapPairInfo(false, true);
-        // canRefresh.value = true;
+        if (!isStableCoinSwap.value) {
+          if (isStableCoinForNVT.value) {
+            // 稳定币换NVT，缓存稳定币N兑换NVT交易对信息
+            const routeCoin = getStableRouteCoin();
+            await storeSwapPairInfo(false, false, routeCoin);
+          }
+          // canRefresh.value = false;
+          // 缓存交易对信息
+          await storeSwapPairInfo();
+          // 反向缓存交易对信息
+          await storeSwapPairInfo(false, true);
+          // canRefresh.value = true;
+        }
         context.emit("selectAsset", state.fromAsset, state.toAsset);
       } else {
         context.emit("updateRate", "");
       }
+    }
+
+    // 获取稳定币换NVT中间路由资产
+    function getStableRouteCoin() {
+      const fromKey = state.fromAsset?.assetKey;
+      const routeCoinKey = stableCoins.value[fromKey as string];
+      return props.assetsList.find(asset => asset.assetKey === routeCoinKey)!;
     }
 
     function customerFocus(type: string) {
@@ -342,13 +380,17 @@ export default defineComponent({
     }
 
     // 缓存交易对的兑换信息 refresh-刷新, isTemp-反向计算
-    async function storeSwapPairInfo(refresh = false, isTemp = false) {
+    async function storeSwapPairInfo(
+      refresh = false,
+      isTemp = false,
+      stableCoin?: AssetItem
+    ) {
       let fromAssetKey, toAssetKey, tokenInAmount, tokenInDecimal;
       if (!isTemp) {
-        fromAssetKey = state.fromAsset?.assetKey;
+        fromAssetKey = stableCoin?.assetKey || state.fromAsset?.assetKey;
         toAssetKey = state.toAsset?.assetKey;
         tokenInAmount = state.fromAmount || "1";
-        tokenInDecimal = state.fromAsset?.decimals;
+        tokenInDecimal = stableCoin?.decimals || state.fromAsset?.decimals;
       } else {
         fromAssetKey = state.toAsset?.assetKey;
         toAssetKey = state.fromAsset?.assetKey;
@@ -407,107 +449,131 @@ export default defineComponent({
     async function changeDirection() {
       if (!state.fromAsset || !state.toAsset) {
         return false;
-      } else if (
-        state.fromAsset &&
-        state.toAsset &&
-        (!state.fromAmount || !state.toAmount)
-      ) {
-        const tempToAsset = { ...state.toAsset };
-        const tempFromAsset = { ...state.fromAsset };
-        state.fromAsset = tempToAsset;
-        state.toAsset = tempFromAsset;
-      } else {
-        const tempToAsset = { ...state.toAsset };
-        const tempFromAsset = { ...state.fromAsset };
-        state.fromAsset = tempToAsset;
-        state.toAsset = tempFromAsset;
-        if (state.customerType === "from") {
-          state.toAmount = state.fromAmount;
-        } else if (state.customerType === "to") {
-          state.fromAmount = state.toAmount;
-        }
+      }
+      const tempToAsset = { ...state.toAsset };
+      const tempFromAsset = { ...state.fromAsset };
+      state.fromAsset = tempToAsset;
+      state.toAsset = tempFromAsset;
+      checkIsStableCoinForNVT(
+        state?.fromAsset?.assetKey,
+        state?.toAsset?.assetKey
+      );
+      checkIsStableCoinSwap(
+        state?.fromAsset?.assetKey,
+        state?.toAsset?.assetKey
+      );
+      if (isStableCoinForNVT.value && !isStableCoinSwap.value) {
+        const routeCoin = getStableRouteCoin();
+        await storeSwapPairInfo(false, false, routeCoin);
       }
       getSwapAmount("1", "to", true);
       context.emit("selectAsset", state.fromAsset, state.toAsset);
+      await getAmountByToggleSwap();
+    }
+
+    // 通过from计算to
+    async function getToByFrom(val: string) {
+      if (state.disableWatchFromAmount) return;
+      customerFocus("from");
+      if (val) {
+        if (!state.fromAsset || !state.toAsset) return false;
+        if (
+          !Number(state.fromAsset.available) ||
+          // @ts-ignore
+          Minus(state.fromAsset.available, val) < 0
+        ) {
+          state.fromAmountError =
+            ((state.fromAsset && state.fromAsset.symbol) || "") +
+            t("transfer.transfer15");
+        } else {
+          state.fromAmountError = "";
+        }
+
+        const [res, priceImpact] = getSwapAmount(val, "to"); // 通过from计算to
+        state.priceImpact = priceImpact || 0;
+        state.insufficient = res === 0;
+        if (res) {
+          state.disableWatchToAmount = true; // 避免进入无限循环计算
+          state.toAmount = res;
+          getSwapRate(false);
+          await nextTick();
+          state.disableWatchToAmount = false;
+        } else {
+          getSwapRate(true);
+        }
+      } else {
+        state.priceImpact = "";
+        if (!state.fromAmountError) {
+          state.toAmount = "";
+        }
+        getSwapRate(true);
+      }
+    }
+
+    // 通过to计算from
+    async function getFromByTo(val: string) {
+      if (state.disableWatchToAmount) return;
+      customerFocus("to");
+      if (val) {
+        if (!state.fromAsset || !state.toAsset) return false;
+        const [res, priceImpact] = getSwapAmount(val, "from"); // 通过to计算from
+        // console.log(res, priceImpact, 666);
+        state.priceImpact = priceImpact || 0;
+        state.insufficient = res === 0;
+        if (res) {
+          state.disableWatchFromAmount = true;
+          state.fromAmount = res;
+          getSwapRate(false);
+          await nextTick();
+          state.disableWatchFromAmount = false;
+        } else {
+          getSwapRate(true);
+        }
+      } else {
+        state.priceImpact = "";
+        state.fromAmount = "";
+        getSwapRate(true);
+      }
+    }
+
+    async function getAmountByToggleSwap() {
+      state.disableWatchToAmount = true;
+      state.disableWatchFromAmount = true;
+      const fromAmount = state.fromAmount;
+      const toAmount = state.toAmount;
+      state.fromAmount = "";
+      state.toAmount = "";
+      await nextTick();
+      //console.log(state.customerType, fromAmount, toAmount);
+      if (state.customerType === "from") {
+        state.disableWatchToAmount = false;
+        state.toAmount = fromAmount;
+      } else if (state.customerType === "to") {
+        state.disableWatchFromAmount = false;
+        state.fromAmount = toAmount;
+      }
+      await nextTick();
+      state.disableWatchToAmount = false;
+      state.disableWatchFromAmount = false;
     }
 
     // 监听fromAmount变化
     watch(
       () => state.fromAmount,
       async val => {
-        // debugger;
-        if (val) {
-          if (!state.fromAsset || !state.toAsset) return false;
-          if (
-            !Number(state.fromAsset.available) ||
-            // @ts-ignore
-            Minus(state.fromAsset.available, val) < 0
-          ) {
-            state.fromAmountError =
-              ((state.fromAsset && state.fromAsset.symbol) || "") +
-              t("transfer.transfer15");
-          } else {
-            state.fromAmountError = "";
-          }
-
-          if (!state.disableWatchFromAmount) {
-            customerFocus("from");
-            const [res, priceImpact] = getSwapAmount(val, "to"); // 通过from计算to
-            state.priceImpact = priceImpact || 0;
-            state.insufficient = res === 0;
-            if (res) {
-              state.disableWatchToAmount = true; // 避免进入无限循环计算
-              state.toAmount = res;
-              getSwapRate(false);
-              await nextTick();
-              state.disableWatchToAmount = false;
-            } else {
-              getSwapRate(true);
-            }
-          }
-        } else {
-          state.priceImpact = "";
-          if (!state.fromAmountError) {
-            state.toAmount = "";
-          }
-          customerFocus("from");
-          getSwapRate(true);
-        }
+        await getToByFrom(val);
       }
     );
     watch(
       () => state.toAmount,
       async val => {
-        if (val) {
-          if (!state.fromAsset || !state.toAsset) return false;
-
-          if (!state.disableWatchToAmount) {
-            customerFocus("to");
-            const [res, priceImpact] = getSwapAmount(val, "from"); // 通过to计算from
-            // console.log(res, priceImpact, 666);
-            state.priceImpact = priceImpact || 0;
-            state.insufficient = res === 0;
-            if (res) {
-              state.disableWatchFromAmount = true;
-              state.fromAmount = res;
-              getSwapRate(false);
-              await nextTick();
-              state.disableWatchFromAmount = false;
-            } else {
-              getSwapRate(true);
-            }
-          }
-        } else {
-          customerFocus("to");
-          state.priceImpact = "";
-          state.fromAmount = "";
-          getSwapRate(true);
-        }
+        await getFromByTo(val);
       },
       {
         deep: true
       }
     );
+
     watch(
       () => props.defaultAsset,
       val => {
@@ -544,6 +610,7 @@ export default defineComponent({
       }
     );
     const canRefresh = ref(true);
+
     async function refresh() {
       const startTime = new Date().getTime();
       try {
@@ -564,6 +631,7 @@ export default defineComponent({
         canRefresh.value = true;
       }
     }
+
     async function forceRefresh() {
       if (timer) clearInterval(timer);
       await refresh();
@@ -571,6 +639,7 @@ export default defineComponent({
         await refresh();
       }, 5000);
     }
+
     async function refreshRate() {
       if (!state.fromAmount && !state.toAmount) return;
       // const [res, priceImpact] = getSwapAmount(state.fromAmount, "to"); // 通过from计算to
@@ -599,6 +668,7 @@ export default defineComponent({
         getSwapRate(true);
       }
     }
+
     let timer: number; // 5s刷新一次交易对信息&兑换比例
     onMounted(() => {
       timer = window.setInterval(async () => {
@@ -623,7 +693,25 @@ export default defineComponent({
         !isNaN(Number(amount)) &&
         Number(amount) > 0
       ) {
-        const key = fromAssetKey + "_" + toAssetKey;
+        // 稳定币、稳定币N互换
+        if (isStableCoinSwap.value) {
+          state.routesSymbol = [state.fromAsset?.symbol, state.toAsset?.symbol];
+          return [amount, 0];
+        }
+
+        let key = fromAssetKey + "_" + toAssetKey;
+        let fromAsset = state.fromAsset;
+        if (isStableCoinForNVT.value) {
+          const routeCoinKey = stableCoins.value[fromAssetKey];
+          const routeCoin = getStableRouteCoin();
+          state.routesSymbol = [
+            state.fromAsset?.symbol,
+            routeCoin.symbol,
+            "NVT"
+          ];
+          key = routeCoinKey + "_" + toAssetKey;
+          fromAsset = routeCoin;
+        }
         const pairsInfo = storedSwapPairInfo[key];
 
         if (!pairsInfo) {
@@ -633,9 +721,9 @@ export default defineComponent({
           return [0, 0];
         }
         const fromDecimal =
-          type === "from" ? state.toAsset?.decimals : state.fromAsset?.decimals;
+          type === "from" ? state.toAsset?.decimals : fromAsset?.decimals;
         const toDecimal =
-          type === "from" ? state.fromAsset?.decimals : state.toAsset?.decimals;
+          type === "from" ? fromAsset?.decimals : state.toAsset?.decimals;
         amount = timesDecimals(amount, fromDecimal);
         // console.log(pairsInfo, 66, amount, fromDecimal);
         const pairs = Object.values(pairsInfo);
@@ -644,7 +732,8 @@ export default defineComponent({
           if (getInitialRate) {
             const bestExactInForOne = bestTradeExactIn(
               timesDecimals("1", fromDecimal),
-              pairs
+              pairs,
+              fromAsset
             );
             const toAmount = divisionDecimals(
               bestExactInForOne.tokenAmountOut.amount,
@@ -654,22 +743,24 @@ export default defineComponent({
           }
           const bestExact =
             type === "to"
-              ? bestTradeExactIn(amount, pairs)
-              : bestTradeExactOut(amount, pairs);
+              ? bestTradeExactIn(amount, pairs, fromAsset)
+              : bestTradeExactOut(amount, pairs, fromAsset);
           // console.log(bestExact, "---bestExact---", pairs, 999);
           if (bestExact) {
             const inAmount = bestExact.tokenAmountIn.amount.toString();
-            const outAmount = bestExact.tokenAmountOut.amount.toString();
+            const outAmount = bestExact.tokenAmountOut.amount.toFixed();
             // console.log(inAmount, outAmount, "===---===", amount, type, state.customerType);
             const tokenPathArray = bestExact.path;
-            const routesSymbol: string[] = [];
-            bestExact.path.map((v: any) => {
-              const asset = props.assetsList.find(
-                asset => asset.assetKey === v.chainId + "-" + v.assetId
-              );
-              asset && routesSymbol.push(asset.symbol);
-            });
-            state.routesSymbol = routesSymbol;
+            if (!isStableCoinForNVT.value) {
+              const routesSymbol: string[] = [];
+              bestExact.path.map((v: any) => {
+                const asset = props.assetsList.find(
+                  asset => asset.assetKey === v.chainId + "-" + v.assetId
+                );
+                asset && routesSymbol.push(asset.symbol);
+              });
+              state.routesSymbol = routesSymbol;
+            }
             const pairsArray = [];
             for (let i = 0; i < tokenPathArray.length - 1; i++) {
               const token0 = tokenPathArray[i];
@@ -702,10 +793,14 @@ export default defineComponent({
     }
 
     // 通过输入from获取最佳兑换信息
-    function bestTradeExactIn(amount: string, pairs: any) {
+    function bestTradeExactIn(
+      amount: string,
+      pairs: any,
+      fromAsset = state.fromAsset
+    ) {
       const tokenAmountIn = nerve.swap.tokenAmount(
-        state.fromAsset?.chainId,
-        state.fromAsset?.assetId,
+        fromAsset?.chainId,
+        fromAsset?.assetId,
         amount
       );
       const tokenOut = nerve.swap.token(
@@ -726,12 +821,14 @@ export default defineComponent({
         return null;
       }
     }
+
     // 通过输入to 获取最佳兑换信息
-    function bestTradeExactOut(amount: string, pairs: any) {
-      const tokenIn = nerve.swap.token(
-        state.fromAsset?.chainId,
-        state.fromAsset?.assetId
-      );
+    function bestTradeExactOut(
+      amount: string,
+      pairs: any,
+      fromAsset = state.fromAsset
+    ) {
+      const tokenIn = nerve.swap.token(fromAsset?.chainId, fromAsset?.assetId);
       const tokenAmountOut = nerve.swap.tokenAmount(
         state.toAsset?.chainId,
         state.toAsset?.assetId,
@@ -782,6 +879,7 @@ export default defineComponent({
       // if (!state.protectPercent) {
       //   state.protectPercent = 0.5;
       // }
+      if (isStableCoinSwap.value) return state.toAmount;
       return fixNumber(
         Times(state.toAmount, 1 - Number(state.protectPercent) / 100).toFixed(),
         state.toAsset?.decimals
@@ -791,6 +889,7 @@ export default defineComponent({
     const maxSale = computed(() => {
       // 最多卖出
       if (!state.fromAmount) return "";
+      if (isStableCoinSwap.value) return state.fromAmount;
       return fixNumber(
         Times(
           state.fromAmount,
@@ -802,6 +901,7 @@ export default defineComponent({
 
     const fee = computed(() => {
       if (!state.fromAsset) return "";
+      if (isStableCoinSwap.value) return "0";
       return fixNumber(
         Times(state.fromAmount, divisionDecimals("0.3", 2)).toFixed(),
         state.fromAsset?.decimals
@@ -901,10 +1001,12 @@ export default defineComponent({
     });
 
     const settingDialog = ref(false);
+
     function toggleExpand() {
       // if (!state.fromAsset.symbol || !state.toAsset.symbol) return;
       context.emit("toggleExpand");
     }
+
     function toggleSettingDialog() {
       settingDialog.value = !settingDialog.value;
     }
@@ -924,38 +1026,119 @@ export default defineComponent({
     }
 
     const { handleHex } = useBroadcastNerveHex();
+
     async function swapTrade() {
       loading.value = true;
-      const fromAssetKey = state.fromAsset?.assetKey;
-      const toAssetKey = state.toAsset?.assetKey;
+      const fromAssetKey = state.fromAsset?.assetKey as string;
+      const toAssetKey = state.toAsset?.assetKey as string;
       const fromDecimal = state.fromAsset?.decimals;
       const toDecimal = state.toAsset?.decimals;
       try {
         const fromAddress = takerAddress.value;
-        const amountIn = timesDecimals(state.fromAmount, fromDecimal); // 卖出的资产数量
-        // 币币交换资产路径，路径中最后一个资产，是用户要买进的资产
-        const key = fromAssetKey + "_" + toAssetKey;
-        const pairsInfo = storedSwapPairInfo[key];
-        const pairs = Object.values(pairsInfo);
-        const bestExactIn = bestTradeExactIn(amountIn, pairs);
-        const tokenPath = bestExactIn.path;
-        const amountOutMin = timesDecimals(minReceive.value, toDecimal).split(
-          "."
-        )[0]; // 最小买进的资产数量
-        const feeTo = null; // 交易手续费取出一部分给指定的接收地址
-        const deadline = nerve.swap.currentTime() + 300; // 过期时间
-        const toAddress = fromAddress; // 资产接收地址
+        const toAddress = fromAddress;
+        const deadline = nerve.swap.currentTime() + 300;
         const remark = "";
-        const tx = await nerve.swap.swapTrade(
-          fromAddress,
-          amountIn,
-          tokenPath,
-          amountOutMin,
-          feeTo,
-          deadline,
-          toAddress,
-          remark
-        );
+        let tx;
+        if (isStableCoinSwap.value) {
+          // 稳定币、稳定币N互换
+          const [chainId, assetId] = fromAssetKey.split("-");
+          const amountIn = timesDecimals(state.fromAmount, fromDecimal);
+          if (stableCoins.value[fromAssetKey] === toAssetKey) {
+            // 稳定币换稳定币N
+            const stableN: any = stablePairList.value.find(
+              (v: any) => v.lpToken === toAssetKey
+            );
+            const stablePairAddress = stableN.address;
+            const tokenAmounts = [
+              nerve.swap.tokenAmount(+chainId, +assetId, amountIn)
+            ];
+            tx = await nerve.swap.stableSwapAddLiquidity(
+              fromAddress,
+              stablePairAddress,
+              tokenAmounts,
+              deadline,
+              toAddress,
+              remark
+            );
+          } else {
+            // 稳定币N换稳定币
+            const stableN: any = stablePairList.value.find(
+              (v: any) => v.lpToken === fromAssetKey
+            );
+            const stablePairAddress = stableN.address;
+            const tokenAmountLP = nerve.swap.tokenAmount(
+              +chainId,
+              +assetId,
+              amountIn
+            );
+            const receiveOrderIndexs = await getReceiveOrderIndex(
+              stablePairAddress,
+              toAssetKey,
+              state.fromAmount
+            );
+            tx = await nerve.swap.stableSwapRemoveLiquidity(
+              fromAddress,
+              stablePairAddress,
+              tokenAmountLP,
+              receiveOrderIndexs,
+              deadline,
+              toAddress,
+              remark
+            );
+          }
+        } else {
+          const amountIn = timesDecimals(state.fromAmount, fromDecimal); // 卖出的资产数量
+          const amountOutMin = timesDecimals(minReceive.value, toDecimal).split(
+            "."
+          )[0]; // 最小买进的资产数量
+          const feeTo = null; // 交易手续费取出一部分给指定的接收地址
+          if (isStableCoinForNVT.value) {
+            // 稳定币换NVT
+            const tokenIn = nerve.swap.token(
+              state.fromAsset?.chainId,
+              state.fromAsset?.assetId
+            );
+            const tokenOut = nerve.swap.token(
+              state.toAsset?.chainId,
+              state.toAsset?.assetId
+            );
+            const check = nerve.swap.checkStableToken(
+              tokenIn,
+              stablePairList.value
+            );
+            const tokenFirst = check.lpToken;
+            const stablePairAddress = check.address; // 稳定币交易对地址
+            const tokenPath = [tokenIn, tokenFirst, tokenOut];
+            tx = await nerve.swap.stableLpSwapTrade(
+              fromAddress,
+              stablePairAddress,
+              amountIn,
+              tokenPath,
+              amountOutMin,
+              feeTo,
+              deadline,
+              toAddress,
+              remark
+            );
+          } else {
+            // 币币交换资产路径，路径中最后一个资产，是用户要买进的资产
+            const key = fromAssetKey + "_" + toAssetKey;
+            const pairsInfo = storedSwapPairInfo[key];
+            const pairs = Object.values(pairsInfo);
+            const bestExactIn = bestTradeExactIn(amountIn, pairs);
+            const tokenPath = bestExactIn.path;
+            tx = await nerve.swap.swapTrade(
+              fromAddress,
+              amountIn,
+              tokenPath,
+              amountOutMin,
+              feeTo,
+              deadline,
+              toAddress,
+              remark
+            );
+          }
+        }
         const res: any = await handleHex(tx.hex);
         if (res && res.hash) {
           context.emit("selectAsset", state.fromAsset, state.toAsset);
@@ -1033,6 +1216,7 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 @import "../../assets/css/style.scss";
+
 .swap {
   //width: 470px;
   width: 37%;
@@ -1040,109 +1224,132 @@ export default defineComponent({
   /* height: 752px; */
   padding-bottom: 12px;
   overflow: hidden;
+
   .icon-wrap {
     .left {
       width: 27px;
       height: 25px;
+
       i {
         font-size: 22px;
         color: $labelColor;
       }
     }
+
     .right {
       span {
         margin-left: 15px;
         cursor: pointer;
+
         &:first-child {
           margin-left: 0;
           width: 22px;
           height: 22px;
           overflow: hidden;
         }
+
         i {
           font-size: 22px;
           color: $labelColor;
         }
       }
+
       .refreshing {
         transform-origin: center center;
         animation: beRotate 1.5s linear infinite;
       }
     }
   }
+
   .from-symbol {
     margin-top: 18px;
   }
+
   .change-direction {
     margin: 12px 0;
     display: flex;
     align-items: center;
     justify-content: center;
   }
+
   .exchange-rate {
     margin-top: 20px;
     margin-bottom: -5px;
     display: flex;
     justify-content: center;
     color: $labelColor;
+
     i {
       font-size: 16px;
       margin: 3px 0 0 5px;
       cursor: pointer;
       color: #4a5ef2;
     }
+
     .change-icon {
       width: 25px;
       height: 22px;
       margin-left: 10px;
       cursor: pointer;
+
       img {
         width: 100%;
         height: 100%;
       }
     }
   }
+
   .swap-area {
     .confirm-wrap {
       margin: 25px 0 30px;
     }
   }
+
   .swap-setting-info {
     border-top: 1px solid $borderColor;
     border-bottom: 1px solid $borderColor;
     padding: 18px 0;
+
     .info-item {
       margin-bottom: 12px;
+
       &:last-child {
         margin-bottom: 0;
       }
+
       * {
         line-height: 1;
       }
+
       .left,
       .right {
         color: $labelColor;
       }
+
       .left,
       .right {
         font-size: 14px;
       }
     }
   }
+
   .setting-and-route {
     overflow: hidden;
     /* &.show {
       animation: expand 0.3s;
     } */
   }
+
   .swap-route {
     .name {
       padding: 12px 0;
       color: $labelColor;
     }
+
     .route-network {
       flex-wrap: wrap;
     }
+
     .route-item {
       display: flex;
       align-items: center;
@@ -1151,17 +1358,20 @@ export default defineComponent({
       &:last-child {
         //width: 20%;
       }
+
       img {
         width: 25px;
         height: 25px;
         border-radius: 50%;
         margin-right: 5px;
       }
+
       span {
         font-size: 14px;
         //font-weight: 600;
         color: $labelColor;
       }
+
       .icon-arrow-right {
         margin: 0 10px;
         font-size: 16px;
@@ -1169,15 +1379,18 @@ export default defineComponent({
       }
     }
   }
+
   .swap-setting {
     .content {
       .set-item {
         //margin-bottom: 40px;
       }
+
       .name {
         margin-bottom: 10px;
         color: $labelColor;
       }
+
       .protect {
         .number {
           width: 70px;
@@ -1188,26 +1401,32 @@ export default defineComponent({
           background-color: $borderColor;
           margin-right: 20px;
           border-radius: 15px;
+
           &.active {
             color: #fff;
             background-color: #004884;
           }
         }
       }
+
       :deep(.el-input) {
         width: 100px;
         margin-right: 3px;
+
         .el-input__inner {
           border-radius: 10px;
           border: none;
         }
       }
+
       .bottom {
         padding: 0 0 20px;
+
         :deep(.el-button) {
           width: 185px;
           height: 48px;
           border-radius: 15px;
+
           &:first-child {
             margin-right: 10px;
           }
@@ -1215,6 +1434,7 @@ export default defineComponent({
       }
     }
   }
+
   @media screen and (max-width: 1200px) {
     padding: 20px !important;
   }
@@ -1223,6 +1443,7 @@ export default defineComponent({
     min-width: 100%;
     .icon-wrap .left {
       height: 23px;
+
       i {
         font-size: 18px;
       }
@@ -1239,6 +1460,7 @@ export default defineComponent({
     .swap-route {
       .route-item {
         margin-bottom: 10px;
+
         .icon-arrow-right {
           margin: 0 8px;
         }
@@ -1253,18 +1475,22 @@ export default defineComponent({
             margin-right: 10px;
           }
         }
+
         :deep(.el-input) {
           .el-input__inner {
             height: 36px;
             line-height: 36px;
           }
         }
+
         .bottom {
           padding: 0 0 20px;
+
           :deep(.el-button) {
             width: 185px;
             height: 48px;
             border-radius: 15px;
+
             &:first-child {
               margin-right: 10px;
             }
@@ -1274,11 +1500,13 @@ export default defineComponent({
     }
   }
 }
+
 .text-error {
   font-size: 13px;
   color: #f56c6c;
   margin-top: 10px;
 }
+
 @keyframes expand {
   0% {
     height: 0;
@@ -1287,6 +1515,7 @@ export default defineComponent({
     height: 245px;
   }
 }
+
 //@media screen and (max-width: 1200px) {
 //  .mobile-p {
 //    padding: 20px !important;

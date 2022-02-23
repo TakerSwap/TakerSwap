@@ -105,7 +105,7 @@ export default defineComponent({
   },
   setup() {
     const { takerAddress } = useStoreState();
-    const { assetsList, defaultAsset, hasQuery: addLiquidity } = useAsset();
+    const { assetsList, defaultAsset, hasQuery: addLiquidity } = useAsset(true);
     let timer: number;
     onMounted(async () => {
       await getData();

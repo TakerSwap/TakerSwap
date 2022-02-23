@@ -15,7 +15,7 @@
     "copy-to-clipboard": "^3.3.1",
     "element-plus": "^1.2.0-beta.3",
     "ethers": "4",
-    "nerve-sdk-js": "^1.0.16",
+    "nerve-sdk-js": "^1.0.18",
     "path": "^0.12.7",
     "sass": "^1.32.12",
     "unplugin-vue-components": "^0.17.2",
