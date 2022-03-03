@@ -81,7 +81,8 @@
             disableTx ||
             !!fromAmountError ||
             !!toAmountError ||
-            impactButton === 2
+            impactButton === 2 ||
+            isStableCoinForStableCoin
           "
           @click="swapTrade"
         >
@@ -98,6 +99,9 @@
           <AuthButton @loading="handleLoading" />
         </template>
       </div>
+    </div>
+    <div class="stable-coin-swap-tip" v-if="isStableCoinForStableCoin">
+      {{ $t("trading.trading22") }}
     </div>
     <div
       v-show="swapRate"
@@ -258,8 +262,10 @@ export default defineComponent({
     const toast = useToast();
     const { takerAddress } = useStoreState();
     const {
-      isStableCoinForNVT,
+      isStableCoinForStableCoin,
+      isStableCoinForOthers,
       isStableCoinSwap,
+      checkIsStableCoinForStableCoin,
       checkIsStableCoinForNVT,
       checkIsStableCoinSwap,
       stableCoins,
@@ -335,6 +341,15 @@ export default defineComponent({
       getSwapRate(true);
       context.emit("updateRate", "");
 
+      checkIsStableCoinForStableCoin(
+        state?.fromAsset?.assetKey,
+        state?.toAsset?.assetKey
+      );
+
+      if (isStableCoinForStableCoin.value) {
+        return;
+      }
+
       checkIsStableCoinForNVT(
         state?.fromAsset?.assetKey,
         state?.toAsset?.assetKey
@@ -350,7 +365,7 @@ export default defineComponent({
         state.toAsset.assetKey
       ) {
         if (!isStableCoinSwap.value) {
-          if (isStableCoinForNVT.value) {
+          if (isStableCoinForOthers.value) {
             // 稳定币换NVT，缓存稳定币N兑换NVT交易对信息
             const routeCoin = getStableRouteCoin();
             await storeSwapPairInfo(false, false, routeCoin);
@@ -462,7 +477,7 @@ export default defineComponent({
         state?.fromAsset?.assetKey,
         state?.toAsset?.assetKey
       );
-      if (isStableCoinForNVT.value && !isStableCoinSwap.value) {
+      if (isStableCoinForOthers.value && !isStableCoinSwap.value) {
         const routeCoin = getStableRouteCoin();
         await storeSwapPairInfo(false, false, routeCoin);
       }
@@ -701,14 +716,9 @@ export default defineComponent({
 
         let key = fromAssetKey + "_" + toAssetKey;
         let fromAsset = state.fromAsset;
-        if (isStableCoinForNVT.value) {
+        if (isStableCoinForOthers.value) {
           const routeCoinKey = stableCoins.value[fromAssetKey];
           const routeCoin = getStableRouteCoin();
-          state.routesSymbol = [
-            state.fromAsset?.symbol,
-            routeCoin.symbol,
-            "NVT"
-          ];
           key = routeCoinKey + "_" + toAssetKey;
           fromAsset = routeCoin;
         }
@@ -751,16 +761,18 @@ export default defineComponent({
             const outAmount = bestExact.tokenAmountOut.amount.toFixed();
             // console.log(inAmount, outAmount, "===---===", amount, type, state.customerType);
             const tokenPathArray = bestExact.path;
-            if (!isStableCoinForNVT.value) {
-              const routesSymbol: string[] = [];
-              bestExact.path.map((v: any) => {
-                const asset = props.assetsList.find(
-                  asset => asset.assetKey === v.chainId + "-" + v.assetId
-                );
-                asset && routesSymbol.push(asset.symbol);
-              });
-              state.routesSymbol = routesSymbol;
+            const routesSymbol: string[] = [];
+            bestExact.path.map((v: any) => {
+              const asset = props.assetsList.find(
+                asset => asset.assetKey === v.chainId + '-' + v.assetId
+              );
+              asset && routesSymbol.push(asset.symbol);
+            });
+            if (isStableCoinForOthers.value) {
+              const fromSymbol = state.fromAsset?.symbol as string;
+              routesSymbol.unshift(fromSymbol);
             }
+            state.routesSymbol = routesSymbol;
             const pairsArray = [];
             for (let i = 0; i < tokenPathArray.length - 1; i++) {
               const token0 = tokenPathArray[i];
@@ -861,7 +873,7 @@ export default defineComponent({
       }
       const fromAmount = state.fromAmount;
       const toAmount = state.toAmount;
-      if (swapDirection.value === "from-to") {
+      if (swapDirection.value === "to-from") {
         swapRate.value = `1 ${state.fromAsset?.symbol} ≈ ${formatFloat(
           Division(toAmount, fromAmount).toFixed(),
           1
@@ -1092,23 +1104,20 @@ export default defineComponent({
             "."
           )[0]; // 最小买进的资产数量
           const feeTo = null; // 交易手续费取出一部分给指定的接收地址
-          if (isStableCoinForNVT.value) {
+          if (isStableCoinForOthers.value) {
             // 稳定币换NVT
             const tokenIn = nerve.swap.token(
               state.fromAsset?.chainId,
               state.fromAsset?.assetId
             );
-            const tokenOut = nerve.swap.token(
-              state.toAsset?.chainId,
-              state.toAsset?.assetId
-            );
-            const check = nerve.swap.checkStableToken(
-              tokenIn,
-              stablePairList.value
-            );
-            const tokenFirst = check.lpToken;
+            const check = nerve.swap.checkStableToken(tokenIn, stablePairList.value);
             const stablePairAddress = check.address; // 稳定币交易对地址
-            const tokenPath = [tokenIn, tokenFirst, tokenOut];
+            const lpToken = check.lpToken;
+            const key = lpToken.chainId + '-' + lpToken.assetId + '_' + toAssetKey;
+            const pairsInfo = storedSwapPairInfo[key];
+            const pairs = Object.values(pairsInfo);
+            const tokenPath = bestTradeExactIn(amountIn, pairs, lpToken).path;
+            tokenPath.unshift(tokenIn);
             tx = await nerve.swap.stableLpSwapTrade(
               fromAddress,
               stablePairAddress,
@@ -1208,7 +1217,9 @@ export default defineComponent({
       canRefresh,
       copyPair,
       impactButton,
-      confirmText
+      confirmText,
+      isStableCoinForOthers,
+      isStableCoinForStableCoin
     };
   }
 });
@@ -1303,6 +1314,12 @@ export default defineComponent({
     .confirm-wrap {
       margin: 25px 0 30px;
     }
+  }
+  .stable-coin-swap-tip {
+    font-size: 13px;
+    text-align: center;
+    margin-top: -15px;
+    color: #f3a83c;
   }
 
   .swap-setting-info {
@@ -1456,6 +1473,9 @@ export default defineComponent({
     }
     .swap-area .confirm-wrap {
       margin-bottom: 10px;
+    }
+    .stable-coin-swap-tip {
+      margin-top: 0;
     }
     .swap-route {
       .route-item {

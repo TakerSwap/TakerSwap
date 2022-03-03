@@ -10,7 +10,7 @@ export async function getTakerFarm(farmHash?: string) {
     method: channel,
     id: genId(),
     params: {
-      farmHash
+      farmHash: farmHash || ""
     }
   };
   return await listen({

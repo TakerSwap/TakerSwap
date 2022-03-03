@@ -105,7 +105,8 @@ const en = {
     trading18: "Confirmed",
     trading19: "Swap Anyway",
     trading20: "Price Impact Too High",
-    trading21: "Swap Failed"
+    trading21: "Swap Failed",
+    trading22: "The intelligent routing of this trading pair has not been opened yet. Please exchange USDTN and then exchange USDT through USDTN."
   },
   liquidity: {
     liquidity1: "Liquidity",

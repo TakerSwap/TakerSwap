@@ -120,6 +120,7 @@ export default defineComponent({
       }
     );
     onMounted(async () => {
+      console.log(2343444)
       const hash = route.params?.hash as string;
       // console.log(hash, 123, route)
       if (hash) {

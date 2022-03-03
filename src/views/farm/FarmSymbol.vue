@@ -1,11 +1,11 @@
 <template>
   <div class="farm-item-symbol">
-    <div class="mult-img-wrap" v-if="symbols.length > 1">
-      <symbol-icon :icon="symbols[0]"></symbol-icon>
-      <symbol-icon :icon="symbols[1]"></symbol-icon>
+    <div class="mult-img-wrap" v-if="logo2">
+      <symbol-icon :icon="logo1"></symbol-icon>
+      <symbol-icon :icon="logo2"></symbol-icon>
     </div>
     <div class="img-wrap" v-else>
-      <symbol-icon :icon="symbols[0]"></symbol-icon>
+      <symbol-icon :icon="logo1"></symbol-icon>
     </div>
     <div class="name">{{ name }}</div>
   </div>
@@ -17,6 +17,8 @@ import SymbolIcon from "@/components/SymbolIcon.vue";
 
 export default defineComponent({
   props: {
+    logo1: String,
+    logo2: String,
     name: String
   },
   components: {
@@ -55,12 +57,12 @@ export default defineComponent({
       position: absolute;
       &:first-child {
         bottom: 0;
-        left: 0;
+        right: 0;
         z-index: 2;
       }
       &:last-child {
         top: 0;
-        right: 0;
+        left: 0;
       }
     }
   }

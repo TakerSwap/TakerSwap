@@ -62,7 +62,7 @@ export default function useData(isPool: boolean) {
       },
       success(data: UserStakeFarm[]) {
         // console.log(data, 321)
-        const totalList = [...state.takerList];
+        const totalList = [...totalTakerList];
         if (totalList.length) {
           data.map(item => {
             totalList.map(v => {
@@ -272,6 +272,7 @@ export default function useData(isPool: boolean) {
       newList = [...newList].filter(v => Number(v.stakeAmount));
     }
     const sortBy = type === "1" ? "apr" : "tatalStakeTokenUSD";
+    console.log(newList, 798798)
     return [...newList].sort((a, b) => {
       return b[sortBy] - a[sortBy];
     });

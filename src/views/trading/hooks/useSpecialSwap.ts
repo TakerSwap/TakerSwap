@@ -10,7 +10,8 @@ const NVT_KEY = config.chainId + "-" + config.assetId;
 
 // U换nvt、U换USDTN
 export default function useSpecialSwap() {
-  const isStableCoinForNVT = ref(false); // 是否是稳定币换NVT
+  const isStableCoinForStableCoin = ref(false); // 稳定币换稳定币, 暂不支持，需提示用户
+  const isStableCoinForOthers = ref(false); // 是否是稳定币换NVT
   const isStableCoinSwap = ref(false); // 稳定币、稳定币N互换
   const stableCoins = ref({}); // {稳定币: 稳定币+'N'}
   const stablePairList = ref([]);
@@ -27,13 +28,28 @@ export default function useSpecialSwap() {
   };
   onMounted(getStablePairList);
 
+  function checkIsStableCoinForStableCoin(
+    token1Key?: string,
+    token2Key?: string
+  ) {
+    if (!token1Key || !token2Key) {
+      isStableCoinForOthers.value = false;
+    } else {
+      return (isStableCoinForStableCoin.value =
+        !!stableCoins.value[token1Key] && stableCoins.value[token2Key]);
+    }
+  }
+
   // 判读是否是稳定币换NVT
   function checkIsStableCoinForNVT(token1Key?: string, token2Key?: string) {
     if (!token1Key || !token2Key) {
-      isStableCoinForNVT.value = false;
+      isStableCoinForOthers.value = false;
+    } else if (checkIsStableCoinForStableCoin(token1Key, token2Key)) {
+      isStableCoinForOthers.value = false;
     } else {
-      isStableCoinForNVT.value =
-        !!stableCoins.value[token1Key] && token2Key === NVT_KEY;
+      isStableCoinForOthers.value =
+        !!stableCoins.value[token1Key] &&
+        token2Key !== stableCoins.value[token1Key];
     }
   }
 
@@ -77,10 +93,12 @@ export default function useSpecialSwap() {
   }
 
   return {
-    isStableCoinForNVT,
+    isStableCoinForStableCoin,
+    isStableCoinForOthers,
     isStableCoinSwap,
     stableCoins,
     stablePairList,
+    checkIsStableCoinForStableCoin,
     checkIsStableCoinForNVT,
     checkIsStableCoinSwap,
     getReceiveOrderIndex

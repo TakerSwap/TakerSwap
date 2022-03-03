@@ -150,6 +150,8 @@ export const superLong = (str: string, len: number) => {
 };
 
 export function getIconSrc(icon: string) {
+  if (!icon) return "";
+  if (icon.startsWith("http") || icon.startsWith("https")) return icon;
   return "https://nuls-cf.oss-us-west-1.aliyuncs.com/icon/" + icon + ".png";
 }
 

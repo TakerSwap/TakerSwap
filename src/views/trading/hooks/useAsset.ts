@@ -32,14 +32,14 @@ export default function useAsset(isLiquidity = false) {
     ([val, sCoins]) => {
       // 添加流动性页面资产列表不展示可swap稳定币资产
       if (val && val.length && (!isLiquidity || Object.keys(sCoins).length)) {
+        if (!isLiquidity) {
+          liquidityAssets.value = val.filter(v => v);
+        } else {
+          liquidityAssets.value = val.filter(v => {
+            return !sCoins[v.assetKey];
+          });
+        }
         if (!isLoaded) {
-          if (!isLiquidity) {
-            liquidityAssets.value = val.filter(v => v);
-          } else {
-            liquidityAssets.value = val.filter(v => {
-              return !sCoins[v.assetKey];
-            });
-          }
           const { fromAsset, toAsset } = route.params;
           const L1Info = _networkInfo[chain.value];
           let defaultSymbol = 'NVT';

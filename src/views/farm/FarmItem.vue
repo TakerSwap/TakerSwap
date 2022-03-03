@@ -7,7 +7,11 @@
     <el-empty :description="$t('public.public19')" v-if="!list.length" />
     <div class="lis" v-for="(item, index) of list" :key="index">
       <div class="title" @click="showId(item.farmHash)">
-        <farm-symbol :name="item.name"></farm-symbol>
+        <farm-symbol
+          :name="item.name"
+          :logo1="item.logo"
+          :logo2="item.logo2"
+        ></farm-symbol>
         <ul>
           <li class="fl">
             <p>{{ $t("farm.farm2") }}</p>
@@ -65,7 +69,11 @@
       <div class="farm-item_cont" @click="showId(item.farmHash)">
         <div class="farm-item_list">
           <div class="symbol-cont">
-            <farm-symbol :name="item.name"></farm-symbol>
+            <farm-symbol
+              :name="item.name"
+              :logo1="item.logo"
+              :logo2="item.logo2"
+            ></farm-symbol>
           </div>
           <div class="farm-info">
             <div class="farm-info_item">

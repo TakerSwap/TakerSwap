@@ -105,7 +105,8 @@ const cn = {
     trading18: "已确认",
     trading19: "仍然兑换",
     trading20: "价格影响很大",
-    trading21: "兑换失败"
+    trading21: "兑换失败",
+    trading22: "暂未开通该交易对智能路由，请兑换USDTN后再通过USDTN进行其余网络的USDT兑换"
   },
   liquidity: {
     liquidity1: "流动性",

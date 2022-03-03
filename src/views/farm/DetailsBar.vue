@@ -5,9 +5,9 @@
         <p
           class="click"
           @click="toAddLiquidity"
-          v-if="isTaker && tokenInfo.name"
+          v-if="isTaker && tokenInfo.stakeTokenSymbol"
         >
-          {{ $t("farm.farm7") + " " + tokenInfo.name }}
+          {{ $t("farm.farm7") + " " + tokenInfo.stakeTokenSymbol }}
           {{ !isPool ? " LP" : "" }}
           <i class=""></i>
         </p>
@@ -100,6 +100,7 @@
     <div class="mobile-cont">
       <div class="option-cont">
         <div class="text-90">
+          {{ tokenInfo.syrupTokenSymbol }}{{ $t('farm.farm2') }}
           {{ $t("farm.farm23") }}{{ tokenInfo.syrupTokenSymbol }}
         </div>
         <div class="d-flex align-items-center space-between">
@@ -169,7 +170,7 @@
         <span>
           {{
             Number(tokenInfo.tatalStakeTokenUSD)
-              ? $thousands(tokenInfo.tatalStakeTokenUSD)
+              ? "$" + $thousands(tokenInfo.tatalStakeTokenUSD)
               : "--"
           }}
         </span>
@@ -184,9 +185,9 @@
       <div
         class="text-4a mt-8"
         @click="toAddLiquidity"
-        v-if="isTaker && tokenInfo.name"
+        v-if="isTaker && tokenInfo.stakeTokenSymbol"
       >
-        {{ $t("farm.farm7") + " " + tokenInfo.name + " Lp" }}
+        {{ $t("farm.farm7") + " " + tokenInfo.stakeTokenSymbol + " Lp" }}
       </div>
       <!--      <div class="text-4a mt-8">{{ $t("farm.farm8") }}</div>-->
     </div>
@@ -195,7 +196,7 @@
       :loading="loading"
       :balance="balance"
       :addOrMinus="addOrMinus"
-      :lpName="tokenInfo.name"
+      :lpName="tokenInfo.stakeTokenSymbol"
       :decimal="tokenInfo.stakeTokenDecimals"
       @confirm="confirmAddOrMinus"
     ></lp-dialog>
@@ -481,11 +482,14 @@ export default defineComponent({
         lpPairAssetBAssetId,
         lpPairAssetBChainId,
         stakeTokenChainId,
-        stakeTokenAssetId
+        stakeTokenAssetId,
+        swapPairAddress,
+        syrupTokenChainId,
+        syrupTokenAssetId
       } = props.tokenInfo as TakerFarmItem;
       let url;
       if (!props.isPool) {
-        url = `/liquidity/${lpPairAssetAChainId}-${lpPairAssetAAssetId}/${lpPairAssetBChainId}-${lpPairAssetBAssetId}`;
+        url = `/liquidity/${stakeTokenChainId}-${stakeTokenAssetId}/${syrupTokenChainId}-${syrupTokenAssetId}`;
       } else {
         const USDT = isBeta ? "5-7" : "9-3";
         url = `/trading/${USDT}/${stakeTokenChainId}-${stakeTokenAssetId}`;
