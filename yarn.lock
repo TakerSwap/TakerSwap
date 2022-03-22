@@ -7266,10 +7266,10 @@ neo-async@^2.5.0, neo-async@^2.6.0, neo-async@^2.6.1, neo-async@^2.6.2:
   resolved "https://registry.npm.taobao.org/neo-async/download/neo-async-2.6.2.tgz?cache=0&sync_timestamp=1594317853334&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Fneo-async%2Fdownload%2Fneo-async-2.6.2.tgz#b4aafb93e3aeb2d8174ca53cf163ab7d7308305f"
   integrity sha1-tKr7k+OustgXTKU88WOrfXMIMF8=
 
-nerve-sdk-js@^1.0.18:
-  version "1.0.18"
-  resolved "https://registry.yarnpkg.com/nerve-sdk-js/-/nerve-sdk-js-1.0.18.tgz#faaa54d25797ce10c39d719c02d31d5c006386c6"
-  integrity sha512-XNfRyphnXXLxoWV0dv40QJ7Lct2jjz+gxeZyM1oNzP28Rrr3L0+tQajm2tvqZ+0Xz0vFNvxrmukk688Mq9ONIw==
+nerve-sdk-js@^1.0.19:
+  version "1.0.19"
+  resolved "https://registry.yarnpkg.com/nerve-sdk-js/-/nerve-sdk-js-1.0.19.tgz#5ae95f2a269efa7ba906ffc1e00a07a8ec765114"
+  integrity sha512-eU0QGmGVT0l66HqGcDn4TWDh1or3hN4M6iZJRXi3kC822FoKkot/rFHo53mEJm7tPlg+Qsd3BFSz3D3ND4/3sg==
   dependencies:
     "@babel/cli" "^7.0.0"
     "@babel/core" "^7.0.0"

@@ -102,7 +102,7 @@ export async function userTradeHistoryPage(data: UserTradeHistoryParam) {
 
 // 查询可用于Swap交易的稳定币交易对
 export async function getStablePairListForSwapTrade() {
-  const channel = "getStablePairListForSwapTrade";
+  const channel = "getAvailableStablePairList";
   const params = {
     method: channel
   };

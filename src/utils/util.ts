@@ -276,6 +276,8 @@ export function isNULSOrNERVE(address: string | null) {
 // 检查资产是否能在L1-L2间跨链
 export function checkCanToL1(asset: AssetItem): boolean {
   if (!asset.heterogeneousList) return false;
+  const allowedSource = [4, 5, 6, 7, 8, 9, 11, 12];
+  if (allowedSource.indexOf(asset.source) < 0) return false;
   return !!asset.heterogeneousList.find((v: HeterogeneousInfo) => {
     return Object.keys(_networkInfo).find(key => {
       if (

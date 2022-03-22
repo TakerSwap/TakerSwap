@@ -373,6 +373,7 @@ export default defineComponent({
       img {
         width: 28px;
         cursor: pointer;
+        border-radius: 50%;
       }
       span {
         cursor: pointer;

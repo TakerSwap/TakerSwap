@@ -4,7 +4,8 @@ import {
   Plus,
   Times,
   checkCanToL1,
-  checkCanToL1OnCurrent
+  checkCanToL1OnCurrent,
+  isBeta
 } from "@/utils/util";
 import { listen } from "@/service/socket/promiseSocket";
 import config from "@/config";
@@ -121,7 +122,7 @@ export async function getAssetList(address = store.state.destroyAddress) {
   const channel = "getAccountLedgerList";
   const params = createRPCParams(channel);
   params.params.push(address);
-  const res: any = await listen({
+  let res: any = await listen({
     url,
     channel,
     params: {
@@ -130,6 +131,27 @@ export async function getAssetList(address = store.state.destroyAddress) {
     }
   });
   if (!res) return [];
+  // 主网隐藏tron相关内容
+  if (!isBeta) {
+    // 过滤tron资产
+    res = res.filter((asset: any) => {
+      // return asset.assetKey !== '9-218' && asset.assetKey !== '9-219' && asset.registerChainId !== 108
+      return asset.assetKey !== "9-219";
+    });
+
+    // 禁止SNEGY, MC2, XTMC跨链
+    res.map((asset: any) => {
+      const assetKey = asset.assetKey;
+      if (
+        assetKey === "9-76" ||
+        assetKey === "9-211" ||
+        assetKey === "9-240" ||
+        assetKey === "9-302"
+      ) {
+        asset.source = 1;
+      }
+    });
+  }
   res.map((item: any) => {
     const decimal = item.decimals;
     item.number = divisionAndFix(item.totalBalanceStr, decimal, decimal);

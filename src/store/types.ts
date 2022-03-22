@@ -24,6 +24,7 @@ export interface AssetItem {
   canToL1OnCurrent: boolean;
   listAvailable?: string;
   contractAddress?: string;
+  source: number;
 }
 
 export interface AccountFarm {
