@@ -1,5 +1,5 @@
 import { ref, onMounted } from "vue";
-import { Minus, divisionDecimals } from "@/utils/util";
+import { Minus, divisionDecimals, isBeta } from "@/utils/util";
 import config from "@/config";
 import {
   getStablePairListForSwapTrade,
@@ -7,6 +7,8 @@ import {
 } from "@/service/api";
 
 const NVT_KEY = config.chainId + "-" + config.assetId;
+
+const USDTN_kEY = isBeta ? '5-102' : '9-220';
 
 // U换nvt、U换USDTN
 export default function useSpecialSwap() {
@@ -28,6 +30,7 @@ export default function useSpecialSwap() {
   };
   onMounted(getStablePairList);
 
+  // 判断是否是稳定币换稳定币
   function checkIsStableCoinForStableCoin(
     token1Key?: string,
     token2Key?: string
@@ -40,16 +43,16 @@ export default function useSpecialSwap() {
     }
   }
 
-  // 判读是否是稳定币换NVT
-  function checkIsStableCoinForNVT(token1Key?: string, token2Key?: string) {
+  // 判读是否是稳定币换其他资产, 只支持USDT - USDTN - symbol，其他的稳定币暂不支持
+  function checkIsStableCoinForOthers(token1Key?: string, token2Key?: string) {
     if (!token1Key || !token2Key) {
       isStableCoinForOthers.value = false;
     } else if (checkIsStableCoinForStableCoin(token1Key, token2Key)) {
       isStableCoinForOthers.value = false;
     } else {
+      const lpToken = stableCoins.value[token1Key];
       isStableCoinForOthers.value =
-        !!stableCoins.value[token1Key] &&
-        token2Key !== stableCoins.value[token1Key];
+        lpToken && lpToken !== token2Key && lpToken === USDTN_kEY;
     }
   }
 
@@ -69,27 +72,36 @@ export default function useSpecialSwap() {
     assetKey: string,
     amount: string
   ) {
-    const res: any = await getStableSwapPairInfo(pairAddress);
-    if (res) {
-      const index = res.coins.findIndex(
+    const { index, info } = await getStableCoinInfoAndIndex(
+      assetKey,
+      pairAddress
+    );
+    if (index !== -1) {
+      const balance = divisionDecimals(
+        info.balances[index],
+        info.coins[index].decimals
+      );
+      if (Minus(amount, balance).toNumber() > 0) {
+        throw "Insufficient pool balance";
+      }
+      const arr = new Array(info.coins.length).fill(1).map((v, i) => i);
+      return arr.splice(index, 1).concat(arr);
+    }
+    return [];
+  }
+  // 获取某个稳定池子的信息和某个稳定币在该稳定币池子中的index
+  async function getStableCoinInfoAndIndex(
+    assetKey: string,
+    pairAddress: string
+  ) {
+    const info = await getStableSwapPairInfo(pairAddress);
+    let index = -1;
+    if (info) {
+      index = info.coins.findIndex(
         (v: any) => v.assetChainId + "-" + v.assetId === assetKey
       );
-      // console.log(index, res, amount);
-      if (index !== -1) {
-        const balance = divisionDecimals(
-          res.balances[index],
-          res.coins[index].decimals
-        );
-        if (Minus(amount, balance).toNumber() > 0) {
-          throw "Insufficient pool balance";
-        }
-        const arr = new Array(res.coins.length).fill(1).map((v, i) => i);
-        return arr.splice(index, 1).concat(arr);
-      }
-      return [];
-    } else {
-      return [];
     }
+    return { info, index };
   }
 
   return {
@@ -99,8 +111,9 @@ export default function useSpecialSwap() {
     stableCoins,
     stablePairList,
     checkIsStableCoinForStableCoin,
-    checkIsStableCoinForNVT,
+    checkIsStableCoinForOthers,
     checkIsStableCoinSwap,
-    getReceiveOrderIndex
+    getReceiveOrderIndex,
+    getStableCoinInfoAndIndex
   };
 }

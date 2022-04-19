@@ -67,8 +67,9 @@ export default function useData(isPool: boolean) {
           data.map(item => {
             totalList.map(v => {
               if (v.farmHash === item.farmHash) {
+                const length = item.stakedTokenAmount.toString().length;
                 v.apr = item.apr;
-                v.stakeAmount = fixNumber(item.stakedTokenAmount, 8);
+                v.stakeAmount = fixNumber(item.stakedTokenAmount, length);
                 v.stakeUSD = item.stakedTokenAmountUSD;
                 v.tatalStakeTokenUSD = item.tatalStakeTokenUSD;
                 v.pendingRewardUSD = item.pendingRewardUSD;

@@ -17,7 +17,13 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, onBeforeUnmount, onMounted, ref } from "vue";
+import {
+  defineComponent,
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref
+} from "vue";
 import config from "@/config";
 import useEthereum, { AddChain } from "@/hooks/useEthereum";
 import { _networkInfo } from "@/utils/heterogeneousChainConfig";
@@ -38,7 +44,7 @@ export default defineComponent({
       if (v.supported) {
         supportChainList.push({
           chainId: v[config.ETHNET],
-          rpcUrls: v.rpcUrl ? [v.rpcUrl[config.ETHNET]] : [],
+          rpcUrls: v.rpcUrl ? [v.rpcUrl] : [],
           chainName: v.name,
           nativeCurrency: {
             name: v.name,

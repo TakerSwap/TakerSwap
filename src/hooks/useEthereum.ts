@@ -59,7 +59,7 @@ export function getProvider(type?: string) {
 
 export function getAddress() {
   const provider = getProvider();
-  return provider?.selectedAddress;
+  return provider?.selectedAddress || provider.address;
 }
 
 export default function useEthereum() {
@@ -71,8 +71,9 @@ export default function useEthereum() {
 
   function initProvider() {
     const provider = getProvider();
-    if (provider && provider.selectedAddress) {
-      state.address = provider.selectedAddress;
+    const address = provider?.selectedAddress || provider?.address;
+    if (provider && address) {
+      state.address = address;
       state.chainId = provider.chainId;
       // console.log(state.address, 8)
       listenAccountChange();
@@ -199,9 +200,6 @@ export default function useEthereum() {
     return {
       address: {
         Ethereum: heterogeneousAddress,
-        BSC: heterogeneousAddress,
-        Heco: heterogeneousAddress,
-        OKExChain: heterogeneousAddress,
         Taker: takerAddress,
         NULS: NULSAddress
       },

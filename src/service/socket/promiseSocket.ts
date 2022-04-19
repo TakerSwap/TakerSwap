@@ -154,7 +154,7 @@ class WebSocketBuilder {
   }
 }
 
-export function listen(data: Params) {
+export function listen<T = any>(data: Params): Promise<T> {
   const { url, channel, params } = data;
   const socket = WebSocketBuilder.sockets[url];
   if (!socket) {

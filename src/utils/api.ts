@@ -321,7 +321,7 @@ export class ETransfer {
         this.provider = ethers.getDefaultProvider(config.ETHNET);
       } else {
         this.provider = new ethers.providers.JsonRpcProvider(
-          RPC_URL[chain][config.ETHNET]
+          RPC_URL[chain].rpcUrl
         );
       }
     }
